@@ -4,6 +4,9 @@ class Ball(CircleObject):
     '''
     Store all ball data and method
     '''
-    def __init__(self, space, position=(0,0), radius=1, mass=1, elasticity=0.75, color=(128, 128, 128, 100)) -> None:
-        super().__init__(space, position, radius, mass, elasticity, color, True, 'assets/images/betterball.png')
+    RADIUS = 20
+    MASS = 5
+    ELASTICITY=0.75
+    def __init__(self, space, position=(0,0)) -> None:
+        super().__init__(space, position, self.RADIUS, self.MASS, self.ELASTICITY, imgPath='assets/images/betterball.png')
     

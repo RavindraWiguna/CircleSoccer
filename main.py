@@ -69,7 +69,7 @@ def run(window, width, height):
     ### === pymunk setup === ###
     # sample object
     # ball = create_ball(space, 24, 5, (WIDTH/2,HEIGHT/2))
-    ball = Ball(space, (WIDTH/2, HEIGHT/2), 24, 5)
+    ball = Ball(space, (WIDTH/2, HEIGHT/2))
     # ball = CircleObject(space, (WIDTH/2, HEIGHT/2), 24, 5)
     create_boundaries(space, WIDTH, HEIGHT)
 
