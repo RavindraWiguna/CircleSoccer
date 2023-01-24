@@ -2,7 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 from ball import Ball
-from gameobject import CircleObject
+from player import Player
 from math_util import *
 
 ### === PYGAME SETUP === ###
@@ -22,11 +22,12 @@ static_body = space.static_body
 # space.gravity = (0.0, 480) # could be 9.81 just different speed
 draw_options = pymunk.pygame_util.DrawOptions(window)
 
-def draw(space, window, draw_options, ball):
+def draw(space, window, draw_options, objs):
     # window.fill('white')
     window.blit(bg, (0,0))
     # space.debug_draw(draw_options)
-    ball.draw(window)
+    for obj in objs:
+        obj.draw(window)
     pygame.display.update()
 
 
@@ -70,6 +71,7 @@ def run(window, width, height):
     # sample object
     # ball = create_ball(space, 24, 5, (WIDTH/2,HEIGHT/2))
     ball = Ball(space, (WIDTH/2, HEIGHT/2))
+    team_a_1 = Player(space, (50, HEIGHT/2), (200, 100, 0, 100))
     # ball = CircleObject(space, (WIDTH/2, HEIGHT/2), 24, 5)
     create_boundaries(space, WIDTH, HEIGHT)
 
@@ -81,7 +83,7 @@ def run(window, width, height):
             elif(event.type==pygame.MOUSEBUTTONDOWN):
                 # give impulse (m*v?) to what vector (x,y) to what local coor
                 ball.body.apply_impulse_at_local_point((1000, 50), (0,0))
-        draw(space, window, draw_options, ball)
+        draw(space, window, draw_options, [ball, team_a_1])
         for _ in range(step):
             space.step(dt)
         clock.tick(fps)
