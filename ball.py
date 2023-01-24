@@ -23,6 +23,6 @@ class Ball:
 
         # pygame setup
         self.radius = radius
-        self.image = pygame.image.load('betterball.png')
+        self.image = pygame.image.load('assets/images/betterball.png')
         self.image = self.image.convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.radius*2, self.radius*2))

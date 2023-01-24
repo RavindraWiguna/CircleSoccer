@@ -9,7 +9,7 @@ pygame.init()
 MULT = 8
 WIDTH, HEIGHT = 160*MULT, 95*MULT
 window = pygame.display.set_mode((WIDTH, HEIGHT))
-bg = pygame.image.load('bg.png')
+bg = pygame.image.load('assets/images/bg.png')
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 
 
