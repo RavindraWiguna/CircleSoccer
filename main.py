@@ -2,6 +2,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 from ball import Ball
+from gameobject import CircleObject
 from math_util import *
 
 ### === PYGAME SETUP === ###
@@ -25,7 +26,7 @@ def draw(space, window, draw_options, ball):
     # window.fill('white')
     window.blit(bg, (0,0))
     # space.debug_draw(draw_options)
-    window.blit(ball.image, (ball.body.position[0]-ball.radius, ball.body.position[1]-ball.radius))
+    ball.draw(window)
     pygame.display.update()
 
 
@@ -69,6 +70,7 @@ def run(window, width, height):
     # sample object
     # ball = create_ball(space, 24, 5, (WIDTH/2,HEIGHT/2))
     ball = Ball(space, (WIDTH/2, HEIGHT/2), 24, 5)
+    # ball = CircleObject(space, (WIDTH/2, HEIGHT/2), 24, 5)
     create_boundaries(space, WIDTH, HEIGHT)
 
     while isRun:
