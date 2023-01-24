@@ -542,7 +542,7 @@ def game(window, width, height, genomes, config):
         objs = [ball, *team_A, *team_B]
         for obj in objs:
             px, py = obj.body.position
-            print(px, py)
+            # print(px, py)
             if(px < 0 or py < 0 or px > width or py > height):
                 isRun=False
                 print('out of bound')
