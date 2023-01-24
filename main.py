@@ -402,7 +402,7 @@ def game(window, width, height, genomes, config):
     for genomeid, genome in genomes:
         initialize_fitness(genome)
 
-    max_force = 27000
+    max_force = 18000
 
     '''
     ========================
