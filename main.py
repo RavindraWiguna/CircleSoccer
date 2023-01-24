@@ -456,6 +456,9 @@ def game(window, width, height, genomes, config):
 
             # output FX and FY
             output = net.activate(input)
+            
+            if(abs(output[0]) < 1e-5 and abs(output[1]) < 1e-5):
+                genome[1].fitness -=0.1
 
             fx, fy = output[0]*3060, output[1]*3060 # di multiply karena butuh big force and kasian networknya gedein sendiri
             fx = min(max_force, fx)
@@ -485,6 +488,9 @@ def game(window, width, height, genomes, config):
             # output FX and FY
             output = net.activate(input)
 
+            if(abs(output[0]) < 1e-5 and abs(output[1]) < 1e-5):
+                genome[1].fitness -=0.1
+
             fx, fy = output[0]*3060, output[1]*3060 # di multiply karena butuh big force and kasian networknya gedein sendiri
             fx = min(max_force, fx)
             fy = min(max_force, fy)
@@ -499,33 +505,43 @@ def game(window, width, height, genomes, config):
 
         if(game_phase==GamePhase.JUST_GOAL):
             # kalo udah 5 - 0 skip atau udah 10 detik from last goal
-            if(max(score_data.values())==5):
-                endgame_fitness() # calculate end game finess
-                # end ronde
-                isRun=False
-                print('get to 5')
-                break
+            # if(max(score_data.values())==5):
+            #     endgame_fitness() # calculate end game finess
+            #     # end ronde
+            #     isRun=False
+            #     print('get to 5')
+            #     break
 
             if(start_time_after_goal is None):
                 start_time_after_goal=time.perf_counter()
             
             # jika melebihi 3 detik setelah goal (yes pakek if because if training.. uhh..., mengding gpp stpi skip 1.0)
             if(time.perf_counter()-start_time_after_goal >= wait_after_goal):
-                # restart ronde
+                # restart ronde # NOPE, END RONDE, KARNA NEXT RONDE PASTI NGULANG
                 # print('D:')
-                total_ronde+=1
-                reset_objects([ball, *team_A, *team_B])
-                game_phase=GamePhase.KICKOFF
-                start_time_after_goal=None
-                ronde_time=time.perf_counter()
+                # total_ronde+=1
+                # reset_objects([ball, *team_A, *team_B])
+                # game_phase=GamePhase.KICKOFF
+                # start_time_after_goal=None
+                # ronde_time=time.perf_counter()
+                # end ronde
+                isRun=False
+                print('get to 1 goal stop')
+                break
         
-        # cek apakah ada movement:
+        # cek apakah ada movement: atau diluar batas
         objs = [ball, *team_A, *team_B]
         for obj in objs:
             vx, vy = obj.body.velocity
             if(abs(vx)+abs(vy) > 1e-7):
                 existMovement=True
                 # print(obj.body.velocity)
+                break
+            
+            px, py = obj.body.position
+            if(px < 0 or py < 0 or px > width or py > height):
+                isRun=False
+                print('out of bound')
                 break
         
         if(not existMovement and game_phase != GamePhase.KICKOFF):
