@@ -1,20 +1,16 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
-import cv2
-import numpy as np
 from ball import Ball
+from math_util import *
 
 ### === PYGAME SETUP === ###
 pygame.init()
 MULT = 8
 WIDTH, HEIGHT = 160*MULT, 95*MULT
 window = pygame.display.set_mode((WIDTH, HEIGHT))
-bg_img = cv2.imread('bg.png')
-bg_img = cv2.rotate(bg_img, cv2.ROTATE_90_CLOCKWISE)
-bg_img = cv2.resize(bg_img, (HEIGHT, WIDTH))
-bg = pygame.surfarray.make_surface(bg_img)
-# print(type(bg_img), bg_img.shape, bg_img.dtype)
+bg = pygame.image.load('bg.png')
+bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 
 
 ### === PYMUNK SETUP === ###
@@ -32,27 +28,7 @@ def draw(space, window, draw_options, ball):
     window.blit(ball.image, (ball.body.position[0]-ball.radius, ball.body.position[1]-ball.radius))
     pygame.display.update()
 
-def calculate_distance(src, dst):
-    dx = src[0]-dst[0]
-    dy = src[1]-dst[1]
-    return np.sqrt(dx*dx + dy*dy)
 
-def calculate_angle(src, dst):
-    return np.arctan2(dst[1]-src[1], dst[0]-src[0])
-
-# def create_ball(space, radius, mass, position):
-#     body = pymunk.Body()
-#     body.position = position
-#     shape = pymunk.Circle(body, radius)
-#     shape.mass = mass
-#     shape.color = (128, 255, 64, 100) # R,G,B,A
-#     shape.elasticity=0.75
-#     # shape.friction=0.9
-#     pivot = pymunk.PivotJoint(static_body, body, (0,0), (0,0))
-#     pivot.max_bias = 0 # disable joint correction
-#     pivot.max_force = 1000 # emulate linear friction
-#     space.add(body, shape, pivot)
-#     return shape
 
 def create_boundaries(space, width, height):
     # format: cx,cy, w,h
