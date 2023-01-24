@@ -1,10 +1,14 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
+
 from ball import Ball
 from player import Player
-from math_util import *
 from gameobject import RectObject
+from enums import CollisionType, GamePhase
+from math_util import *
+
+import time
 
 ### === PYGAME SETUP === ###
 pygame.init()
@@ -14,28 +18,32 @@ window = pygame.display.set_mode((WIDTH, HEIGHT))
 bg = pygame.image.load('assets/images/bg.png')
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
 SCORE_FONT = pygame.font.SysFont('magneto', 40)
+score_data = {'A':0,'B':0}
+game_phase = GamePhase.Normal
 
 ### === PYMUNK SETUP === ###
 # make space where we will simulate
 space = pymunk.Space()
 static_body = space.static_body
-# add gravity direction (x,y)
-# space.gravity = (0.0, 480) # could be 9.81 just different speed
 draw_options = pymunk.pygame_util.DrawOptions(window)
+
+### === DRAWING FUNCTIONS === ###
 
 def draw_score(window, a, b):
     pygame.draw.rect(window, (255, 255, 255), (WIDTH/2-90, 0, 180, 50))
     score_text = SCORE_FONT.render(f'{a:02d} : {b:02d}', 1, (16, 16, 16))
     window.blit(score_text, (WIDTH/2-85, 10))
 
-def draw(space, window, draw_options, objs):
+def draw(space, window, draw_options, objs, score_data):
     # window.fill('white')
     window.blit(bg, (0,0))
-    draw_score(window, 0, 0)
+    draw_score(window, score_data['A'], score_data['B'])
     # space.debug_draw(draw_options)
     for obj in objs:
         obj.draw(window)
 
+
+### === GAME SPECIFIC FUNCTIONS === ###
 
 def create_boundaries(space, width, height, bwidth):
     # format: cx,cy, w,h
@@ -64,20 +72,59 @@ def create_boundaries(space, width, height, bwidth):
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
 
+def goal_a_handler(arbiter, space, data):
+    global score_data, game_phase
+    if(game_phase==GamePhase.Normal):
+        score_data['B']+=1
+        game_phase=GamePhase.JUST_GOAL
+
+    return True
+
+def goal_b_handler(arbiter, space, data):
+    global score_data, game_phase
+    if(game_phase==GamePhase.Normal):
+        score_data['A']+=1
+        game_phase=GamePhase.JUST_GOAL
+    return True
+
+def reset_objects(objs):
+    for obj in objs:
+        obj.reset()
+
+def reset_score():
+    global score_data
+    score_data['A']=0
+    score_data['B']=0
+
+### ==== MAIN FUNCTION ==== ###
 
 def run(window, width, height):
+    global game_phase
+    '''
+    =============================
+      PYGAME-PYMUNK LOOP SETUP
+    =============================
+    '''
     isRun = True
     clock = pygame.time.Clock()
     fps = 120
     step=1
     dt = 1/(step*fps)
 
-    ### === game object setup/spawn === ###
+    '''
+    ======================================
+           SPAWN GAME'S OBJECTS
+    ======================================
+    '''
+    # BORDER FOR BOUNCE
     wall_width=4
     create_boundaries(space, width, height, wall_width)
     
+    # GAME'S BALL
     ball = Ball(space, (width/2, height/2))
+    ball.shape.collision_type=CollisionType.BALL.value
     
+    # GOALS variable
     height_goal = 175
     width_goal=6
     width_tiang=48
@@ -93,6 +140,11 @@ def run(window, width, height):
         RectObject(space, (wall_width+width_tiang/2, height/2-height_goal/2-height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
     ]
 
+    goal_a[0].shape.collision_type=CollisionType.GOAL_A.value
+    print(ball.shape.collision_type, goal_a[0].shape.collision_type)
+    goal_a_sensor = space.add_collision_handler(ball.shape.collision_type, goal_a[0].shape.collision_type)
+    goal_a_sensor.begin=goal_a_handler
+
     offsetb=-6
     goal_b = [
         # vertical sensor
@@ -105,36 +157,29 @@ def run(window, width, height):
         RectObject(space, (width-wall_width-width_tiang/2+offsetb, height/2-height_goal/2-height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
     ]
 
+    goal_b[0].shape.collision_type=CollisionType.GOAL_B.value
+    print(ball.shape.collision_type, goal_b[0].shape.collision_type)
+    goal_b_sensor = space.add_collision_handler(ball.shape.collision_type, goal_b[0].shape.collision_type)
+    goal_b_sensor.begin=goal_b_handler
+
     team_a_1 = Player(space, (50, height/2), (200, 100, 0, 100))
+    team_a_1.shape.collision_type=CollisionType.A_P1.value
 
 
-    # isAiming=False
+    '''
+    ========================
+            MAIN LOOP
+    ========================
+    '''
     min_dim = min(width, height)
     norm_div = min_dim/2
+    start_time_after_goal=None
     while isRun:
         force_magnitude=9000
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 isRun=False
                 break
-                
-            # elif(event.type==pygame.MOUSEBUTTONDOWN):
-            #     if(not isAiming):
-            #         # check if player a is clicked
-            #         dplayer = calculate_distance(team_a_1.body.position, event.pos)
-            #         if(dplayer<=team_a_1.radius):
-            #             isAiming=True
-
-            # elif(event.type==pygame.MOUSEBUTTONUP):
-            #     if(isAiming):
-            #         isAiming=False
-                    
-            #         # add force
-            #         angle = calculate_angle(event.pos, team_a_1.body.position)
-            #         magnitude = calculate_distance(event.pos, team_a_1.body.position)*40
-            #         fx=np.cos(angle)*magnitude
-            #         fy=np.sin(angle)*magnitude
-            #         team_a_1.body.apply_impulse_at_local_point((fx, fy), (0,0))
 
         keys = pygame.key.get_pressed()
         if(keys[pygame.K_LSHIFT]):
@@ -156,16 +201,20 @@ def run(window, width, height):
 
         # for _ in range(step):
         space.step(dt)
-        draw(space, window, draw_options, [ball, team_a_1, *goal_a, *goal_b])
+        draw(space, window, draw_options, [ball, team_a_1, *goal_a, *goal_b], score_data)
         pygame.display.update()
-        # print(team_a_1.body.angle, team_a_1.body.angular_velocity) no change
-        # print(team_a_1.body.moment) no change
-        # print(team_a_1.body.torque) no chnage
-        # print(team_a_1.body.force) no change
-        # print(team_a_1.body.velocity/norm_div) ok
-        # print(team_a_1.body.position/min_dim) ok
-        
         clock.tick(fps)
+
+        if(game_phase==GamePhase.JUST_GOAL):
+            if(start_time_after_goal is None):
+                start_time_after_goal=time.perf_counter()
+            # jika melebihi 3 detik setelah goal
+            elif(time.perf_counter()-start_time_after_goal >= 3.0):
+                # restart game
+                reset_objects([ball, team_a_1])
+                game_phase=GamePhase.Normal
+                start_time_after_goal=None
+
 
 
         

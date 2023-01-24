@@ -12,6 +12,7 @@ class CircleObject:
                  imgPath=None) -> None:
         
         # pymunk setup
+        self.original_position=position
         self.add_to_space=[]
         if(isDynamic):
             self.body = pymunk.Body()
@@ -48,6 +49,11 @@ class CircleObject:
     
     def draw(self, window):
         window.blit(self.image, (self.body.position[0]-self.radius, self.body.position[1]-self.radius))
+    
+    def reset(self):
+        # print('done')
+        self.body._set_position(self.original_position)
+        self.body._set_velocity((0.0, 0.0))
 
 
 class RectObject:
