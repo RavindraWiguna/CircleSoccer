@@ -117,8 +117,8 @@ def run(window, width, height):
             brake_force = -team_a_1.body.velocity * team_a_1.body.mass * 1.5
             team_a_1._apply_force(brake_force)
 
-        for _ in range(step):
-            space.step(dt)
+        # for _ in range(step):
+        space.step(dt)
         draw(space, window, draw_options, [ball, team_a_1])
         pygame.display.update()
         clock.tick(fps)
