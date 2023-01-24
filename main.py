@@ -162,9 +162,38 @@ def run(window, width, height):
     goal_b_sensor = space.add_collision_handler(ball.shape.collision_type, goal_b[0].shape.collision_type)
     goal_b_sensor.begin=goal_b_handler
 
-    team_a_1 = Player(space, (50, height/2), (200, 100, 0, 100))
-    team_a_1.shape.collision_type=CollisionType.A_P1.value
 
+    ## === TEAM A === LEFT IS THE RIGHT SIDE!
+    COLOR_A = (200, 100, 0, 100)
+    team_A = [
+        # keeper (ceritanya)
+        Player(space, (width/8, height/2), COLOR_A),
+        
+        # left wing 
+        Player(space, (width/8*3, height/4), COLOR_A),
+
+        # right wing
+        Player(space, (width/8*3, height/4*3), COLOR_A),
+    ]
+    team_A[0].shape.collision_type=CollisionType.A_P1.value
+    team_A[1].shape.collision_type=CollisionType.A_P2.value
+    team_A[1].shape.collision_type=CollisionType.A_P3.value
+
+
+    COLOR_B = (0, 100, 200, 100)
+    team_B = [
+        # keeper (ceritanya)
+        Player(space, (width/8*7, height/2), COLOR_B),
+        
+        # left wing 
+        Player(space, (width/8*5, height/4), COLOR_B),
+
+        # right wing
+        Player(space, (width/8*5, height/4*3), COLOR_B),
+    ]
+    team_B[0].shape.collision_type=CollisionType.B_P1.value
+    team_B[1].shape.collision_type=CollisionType.B_P2.value
+    team_B[1].shape.collision_type=CollisionType.B_P3.value
 
     '''
     ========================
@@ -187,23 +216,23 @@ def run(window, width, height):
             if(keys[pygame.K_LSHIFT]):
                 force_magnitude=18000
             if(keys[pygame.K_UP]):
-                team_a_1.move_up(force_magnitude)
+                team_A[0].move_up(force_magnitude)
             elif(keys[pygame.K_DOWN]):
-                team_a_1.move_down(force_magnitude)
+                team_A[0].move_down(force_magnitude)
                 # print("down")
             if(keys[pygame.K_LEFT]):
-                team_a_1.move_left(force_magnitude)
+                team_A[0].move_left(force_magnitude)
                 # print("left")
             elif(keys[pygame.K_RIGHT]):
-                team_a_1.move_right(force_magnitude)
+                team_A[0].move_right(force_magnitude)
             
             if(keys[pygame.K_SPACE]):
-                brake_force = -team_a_1.body.velocity * team_a_1.body.mass * 1.5
-                team_a_1._apply_force(brake_force)
+                brake_force = -team_A[0].body.velocity * team_A[0].body.mass * 1.5
+                team_A[0]._apply_force(brake_force)
 
         # for _ in range(step):
         space.step(dt)
-        draw(space, window, draw_options, [ball, team_a_1, *goal_a, *goal_b], score_data)
+        draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
         clock.tick(fps)
 
@@ -214,7 +243,7 @@ def run(window, width, height):
             # jika melebihi 3 detik setelah goal (yes pakek if because if training.. uhh..., mengding gpp stpi skip 1.0)
             if(time.perf_counter()-start_time_after_goal >= wait_after_goal):
                 # restart ronde
-                reset_objects([ball, team_a_1])
+                reset_objects([ball, *team_A, *team_B])
                 game_phase=GamePhase.Normal
                 start_time_after_goal=None
 
