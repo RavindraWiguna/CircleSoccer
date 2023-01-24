@@ -529,7 +529,7 @@ def game(window, width, height, genomes, config):
                 print('get to 1 goal stop')
                 break
         
-        # cek apakah ada movement: atau diluar batas
+        # cek apakah ada movement
         objs = [ball, *team_A, *team_B]
         for obj in objs:
             vx, vy = obj.body.velocity
@@ -537,13 +537,17 @@ def game(window, width, height, genomes, config):
                 existMovement=True
                 # print(obj.body.velocity)
                 break
-            
+        
+        # cek apakah out o bound
+        objs = [ball, *team_A, *team_B]
+        for obj in objs:
             px, py = obj.body.position
+            print(px, py)
             if(px < 0 or py < 0 or px > width or py > height):
                 isRun=False
                 print('out of bound')
                 break
-        
+
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break
             isRun=False
