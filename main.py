@@ -174,6 +174,7 @@ def run(window, width, height):
     min_dim = min(width, height)
     norm_div = min_dim/2
     start_time_after_goal=None
+    wait_after_goal=1.5
     while isRun:
         force_magnitude=9000
         for event in pygame.event.get():
@@ -182,22 +183,23 @@ def run(window, width, height):
                 break
 
         keys = pygame.key.get_pressed()
-        if(keys[pygame.K_LSHIFT]):
-            force_magnitude=18000
-        if(keys[pygame.K_UP]):
-            team_a_1.move_up(force_magnitude)
-        elif(keys[pygame.K_DOWN]):
-            team_a_1.move_down(force_magnitude)
-            # print("down")
-        if(keys[pygame.K_LEFT]):
-            team_a_1.move_left(force_magnitude)
-            # print("left")
-        elif(keys[pygame.K_RIGHT]):
-            team_a_1.move_right(force_magnitude)
-        
-        if(keys[pygame.K_SPACE]):
-            brake_force = -team_a_1.body.velocity * team_a_1.body.mass * 1.5
-            team_a_1._apply_force(brake_force)
+        if(game_phase==GamePhase.Normal):
+            if(keys[pygame.K_LSHIFT]):
+                force_magnitude=18000
+            if(keys[pygame.K_UP]):
+                team_a_1.move_up(force_magnitude)
+            elif(keys[pygame.K_DOWN]):
+                team_a_1.move_down(force_magnitude)
+                # print("down")
+            if(keys[pygame.K_LEFT]):
+                team_a_1.move_left(force_magnitude)
+                # print("left")
+            elif(keys[pygame.K_RIGHT]):
+                team_a_1.move_right(force_magnitude)
+            
+            if(keys[pygame.K_SPACE]):
+                brake_force = -team_a_1.body.velocity * team_a_1.body.mass * 1.5
+                team_a_1._apply_force(brake_force)
 
         # for _ in range(step):
         space.step(dt)
@@ -208,9 +210,10 @@ def run(window, width, height):
         if(game_phase==GamePhase.JUST_GOAL):
             if(start_time_after_goal is None):
                 start_time_after_goal=time.perf_counter()
-            # jika melebihi 3 detik setelah goal
-            elif(time.perf_counter()-start_time_after_goal >= 3.0):
-                # restart game
+            
+            # jika melebihi 3 detik setelah goal (yes pakek if because if training.. uhh..., mengding gpp stpi skip 1.0)
+            if(time.perf_counter()-start_time_after_goal >= wait_after_goal):
+                # restart ronde
                 reset_objects([ball, team_a_1])
                 game_phase=GamePhase.Normal
                 start_time_after_goal=None
