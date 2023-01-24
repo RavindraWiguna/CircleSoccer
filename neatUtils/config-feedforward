@@ -13,7 +13,7 @@ activation_options      = abs clamped cube cube gauss hat identity relu elu lelu
 # node aggregation options
 aggregation_default     = sum
 aggregation_mutate_rate = 0.01
-aggregation_options     = sum, max, min, maxabs, median, mean
+aggregation_options     = sum max min maxabs median mean
 
 # node bias options
 bias_init_mean          = 0.0
