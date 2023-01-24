@@ -4,6 +4,7 @@ import pymunk.pygame_util
 from ball import Ball
 from player import Player
 from math_util import *
+from gameobject import RectObject
 
 ### === PYGAME SETUP === ###
 pygame.init()
@@ -12,7 +13,7 @@ WIDTH, HEIGHT = 160*MULT, 95*MULT
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 bg = pygame.image.load('assets/images/bg.png')
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
-
+SCORE_FONT = pygame.font.SysFont('magneto', 40)
 
 ### === PYMUNK SETUP === ###
 # make space where we will simulate
@@ -22,30 +23,36 @@ static_body = space.static_body
 # space.gravity = (0.0, 480) # could be 9.81 just different speed
 draw_options = pymunk.pygame_util.DrawOptions(window)
 
+def draw_score(window, a, b):
+    pygame.draw.rect(window, (255, 255, 255), (WIDTH/2-90, 0, 180, 50))
+    score_text = SCORE_FONT.render(f'{a:02d} : {b:02d}', 1, (16, 16, 16))
+    window.blit(score_text, (WIDTH/2-85, 10))
+
 def draw(space, window, draw_options, objs):
     # window.fill('white')
     window.blit(bg, (0,0))
+    draw_score(window, 0, 0)
     # space.debug_draw(draw_options)
     for obj in objs:
         obj.draw(window)
 
 
-def create_boundaries(space, width, height):
+def create_boundaries(space, width, height, bwidth):
     # format: cx,cy, w,h
     mid_width = width/2
     mid_height = height/2
     rects = [
         # top wall
-        [(mid_width, 5), (width, 10)],
+        [(mid_width, bwidth/2), (width, bwidth)],
         
         # bottom wall
-        [(mid_width, height-5), (width, 10)],
+        [(mid_width, height-bwidth/2), (width, bwidth)],
 
         # left wall
-        [(5, mid_height), (10, height)],
+        [(bwidth/2, mid_height), (bwidth, height)],
 
         # right wall
-        [(width-5, mid_height), (10, height)]
+        [(width-bwidth/2, mid_height), (bwidth, height)]
     ]
     for pos, size in rects:
         body = pymunk.Body(body_type=pymunk.Body.STATIC)
@@ -53,7 +60,7 @@ def create_boundaries(space, width, height):
 
         shape = pymunk.Poly.create_box(body, size)
         shape.elasticity = 0.9
-        # shape.friction = 0.9
+        shape.friction = 0.5
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
 
@@ -65,17 +72,47 @@ def run(window, width, height):
     step=1
     dt = 1/(step*fps)
 
-    ### === pymunk setup === ###
-    # sample object
-    # ball = create_ball(space, 24, 5, (WIDTH/2,HEIGHT/2))
+    ### === game object setup/spawn === ###
+    wall_width=4
+    create_boundaries(space, width, height, wall_width)
+    
     ball = Ball(space, (width/2, height/2))
+    
+    height_goal = 175
+    width_goal=6
+    width_tiang=48
+    height_tiang=width_goal
+    goal_a = [
+        # vertical sensor
+        RectObject(space, (wall_width+width_goal/2, height/2), (width_goal, height_goal), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+        
+        # tiang bawah
+        RectObject(space, (wall_width+width_tiang/2, height/2+height_goal/2+height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+
+        # tiang atas
+        RectObject(space, (wall_width+width_tiang/2, height/2-height_goal/2-height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
+    ]
+
+    offsetb=-6
+    goal_b = [
+        # vertical sensor
+        RectObject(space, (width-wall_width-width_goal/2+offsetb, height/2), (width_goal, height_goal), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+        
+        # tiang bawah
+        RectObject(space, (width-wall_width-width_tiang/2+offsetb, height/2+height_goal/2+height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+
+        # tiang atas
+        RectObject(space, (width-wall_width-width_tiang/2+offsetb, height/2-height_goal/2-height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
+    ]
+
     team_a_1 = Player(space, (50, height/2), (200, 100, 0, 100))
-    # ball = CircleObject(space, (width/2, height/2), 24, 5)
-    create_boundaries(space, width, height)
+
 
     # isAiming=False
+    min_dim = min(width, height)
+    norm_div = min_dim/2
     while isRun:
-        force_magnitude=7500
+        force_magnitude=9000
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 isRun=False
@@ -101,7 +138,7 @@ def run(window, width, height):
 
         keys = pygame.key.get_pressed()
         if(keys[pygame.K_LSHIFT]):
-            force_magnitude=15000
+            force_magnitude=18000
         if(keys[pygame.K_UP]):
             team_a_1.move_up(force_magnitude)
         elif(keys[pygame.K_DOWN]):
@@ -119,9 +156,17 @@ def run(window, width, height):
 
         # for _ in range(step):
         space.step(dt)
-        draw(space, window, draw_options, [ball, team_a_1])
+        draw(space, window, draw_options, [ball, team_a_1, *goal_a, *goal_b])
         pygame.display.update()
+        # print(team_a_1.body.angle, team_a_1.body.angular_velocity) no change
+        # print(team_a_1.body.moment) no change
+        # print(team_a_1.body.torque) no chnage
+        # print(team_a_1.body.force) no change
+        # print(team_a_1.body.velocity/norm_div) ok
+        # print(team_a_1.body.position/min_dim) ok
+        
         clock.tick(fps)
+
 
         
 

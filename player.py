@@ -4,7 +4,7 @@ class Player(CircleObject):
     '''
     Store all player data and method
     '''
-    RADIUS = 30
+    RADIUS = 25
     MASS = 20
     ELASTICITY=0.75
     MAX_ACC = 100 # since m*a = F, i guess call this acc, i want bigger mass, faster stop
