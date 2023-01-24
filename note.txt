@@ -1,0 +1,29 @@
+lets urutin reward and punishment
+
+Reward:
+- WinGame                                           100 (team)
+- GoalScorer                                        30  (individu)
+- Assist                                            15  (individu)
+- Team Score A goal                                 12   (team)
+- Passing to a team mate (bit gampang di detect)    8   (individu+passer)
+- drible (touch in a row)                           4
+- Merebut bola                                      3   (individu)
+- Touch a ball                                      1   (individu)
+- Block incoming goal (hard to detect tho)          NaN
+
+Punish:
+- LoseGame                                          -100 (team)
+- own goal                                          -50  (individu)
+- Kebobolan                                         -20  (team)
+- Kerebut bolanya                                   -2   (individu)  
+
+input:
+6 player pos-vel -> 24
+ball pos-vel->28
+jarak 4 tembok -> 30
+jarak ke own goal x-y->32
+jarak ke own goal x-y->34
+jarak ke own goal x-y->36
+jarak ke oposite goal -> 38
+jarak ke oposite goal -> 40
+jarak ke oposite goal tiang -> 42

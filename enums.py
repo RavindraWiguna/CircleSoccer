@@ -9,9 +9,10 @@ class CollisionType(Enum):
     A_P2=4
     A_P3=5
     B_P1=8
-    B_P2=7
-    B_P3=8
+    B_P2=9
+    B_P3=10
 
 class GamePhase(Enum):
     Normal=0
     JUST_GOAL=1
+    KICKOFF=2
