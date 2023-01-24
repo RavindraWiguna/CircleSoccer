@@ -28,8 +28,6 @@ def draw(space, window, draw_options, objs):
     # space.debug_draw(draw_options)
     for obj in objs:
         obj.draw(window)
-    pygame.display.update()
-
 
 
 def create_boundaries(space, width, height):
@@ -54,7 +52,7 @@ def create_boundaries(space, width, height):
         body.position = pos
 
         shape = pymunk.Poly.create_box(body, size)
-        shape.elasticity = 0.75
+        shape.elasticity = 0.9
         # shape.friction = 0.9
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
@@ -63,30 +61,68 @@ def create_boundaries(space, width, height):
 def run(window, width, height):
     isRun = True
     clock = pygame.time.Clock()
-    fps = 60
-    step=3
+    fps = 120
+    step=1
     dt = 1/(step*fps)
 
     ### === pymunk setup === ###
     # sample object
     # ball = create_ball(space, 24, 5, (WIDTH/2,HEIGHT/2))
-    ball = Ball(space, (WIDTH/2, HEIGHT/2))
-    team_a_1 = Player(space, (50, HEIGHT/2), (200, 100, 0, 100))
-    # ball = CircleObject(space, (WIDTH/2, HEIGHT/2), 24, 5)
-    create_boundaries(space, WIDTH, HEIGHT)
+    ball = Ball(space, (width/2, height/2))
+    team_a_1 = Player(space, (50, height/2), (200, 100, 0, 100))
+    # ball = CircleObject(space, (width/2, height/2), 24, 5)
+    create_boundaries(space, width, height)
 
+    # isAiming=False
     while isRun:
+        force_magnitude=7500
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 isRun=False
                 break
-            elif(event.type==pygame.MOUSEBUTTONDOWN):
-                # give impulse (m*v?) to what vector (x,y) to what local coor
-                ball.body.apply_impulse_at_local_point((1000, 50), (0,0))
-        draw(space, window, draw_options, [ball, team_a_1])
+                
+            # elif(event.type==pygame.MOUSEBUTTONDOWN):
+            #     if(not isAiming):
+            #         # check if player a is clicked
+            #         dplayer = calculate_distance(team_a_1.body.position, event.pos)
+            #         if(dplayer<=team_a_1.radius):
+            #             isAiming=True
+
+            # elif(event.type==pygame.MOUSEBUTTONUP):
+            #     if(isAiming):
+            #         isAiming=False
+                    
+            #         # add force
+            #         angle = calculate_angle(event.pos, team_a_1.body.position)
+            #         magnitude = calculate_distance(event.pos, team_a_1.body.position)*40
+            #         fx=np.cos(angle)*magnitude
+            #         fy=np.sin(angle)*magnitude
+            #         team_a_1.body.apply_impulse_at_local_point((fx, fy), (0,0))
+
+        keys = pygame.key.get_pressed()
+        if(keys[pygame.K_LSHIFT]):
+            force_magnitude=15000
+        if(keys[pygame.K_UP]):
+            team_a_1.move_up(force_magnitude)
+        elif(keys[pygame.K_DOWN]):
+            team_a_1.move_down(force_magnitude)
+            # print("down")
+        if(keys[pygame.K_LEFT]):
+            team_a_1.move_left(force_magnitude)
+            # print("left")
+        elif(keys[pygame.K_RIGHT]):
+            team_a_1.move_right(force_magnitude)
+        
+        if(keys[pygame.K_SPACE]):
+            brake_force = -team_a_1.body.velocity * team_a_1.body.mass * 1.5
+            team_a_1._apply_force(brake_force)
+
         for _ in range(step):
             space.step(dt)
+        draw(space, window, draw_options, [ball, team_a_1])
+        pygame.display.update()
         clock.tick(fps)
+
         
 
     

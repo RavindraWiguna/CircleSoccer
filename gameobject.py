@@ -6,7 +6,8 @@ class CircleObject:
     Store all circle object data and method
     '''
     def __init__(self, space, 
-                 position=(0,0), radius=1, mass=1, elasticity=0.75, 
+                 position=(0,0), radius=1, mass=1, elasticity=0.75,
+                 pivot_max_force=500,
                  color=(128, 128, 128, 100), isDynamic=True, 
                  imgPath=None) -> None:
         
@@ -25,7 +26,7 @@ class CircleObject:
 
         self.pivot = pymunk.PivotJoint(space.static_body, self.body, (0,0), (0,0))
         self.pivot.max_bias = 0 # disable joint correction
-        self.pivot.max_force = 1000 # emulate linear friction
+        self.pivot.max_force = pivot_max_force # emulate linear friction
         
         space.add(self.body, self.shape, self.pivot)
 
@@ -39,6 +40,8 @@ class CircleObject:
             self.image = pygame.image.load(imgPath)
             self.image = self.image.convert_alpha()
             self.image = pygame.transform.scale(self.image, (self.radius*2, self.radius*2))
+        
+        self.rect = self.image.get_rect()
     
     def draw(self, window):
         window.blit(self.image, (self.body.position[0]-self.radius, self.body.position[1]-self.radius))
