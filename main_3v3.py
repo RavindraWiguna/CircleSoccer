@@ -534,7 +534,7 @@ def game(window, width, height, genomes, config, doRandom=False):
     constant = 2/min_dim
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 3.5
+    max_ronde_time = 7.0
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -723,10 +723,10 @@ def run(config_file):
 
     # p.run(eval_genomes, 10)
     # Add a stdout reporter to show progress in the terminal.
-    # p.add_reporter(neat.StdOutReporter(True))
-    # stats = neat.StatisticsReporter()
-    # p.add_reporter(stats)
-    # p.add_reporter(neat.Checkpointer(20))
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(20))
 
     # Run for up to 300 generations.
     winner = p.run(eval_genomes, 300)
@@ -744,8 +744,8 @@ def run(config_file):
     # node_names = {-1: 'A', -2: 'B', 0: 'A XOR B'}
     # visualize.draw_net(config, winner, True, node_names=node_names)
     # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    # visualize.plot_stats(stats, ylog=False, view=True)
-    # visualize.plot_species(stats, view=True)
+    visualize.plot_stats(stats, ylog=False, view=True)
+    visualize.plot_species(stats, view=True)
 
     import pickle
     with open('winner.pkl', 'wb') as mfile:
