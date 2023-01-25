@@ -721,6 +721,8 @@ def run(config_file):
     import pickle
     p = pickle.load(open('pop.pkl', 'rb'))
     p.config=config
+    print(p.config==config)
+    print(p.config)
 
 
     # p.run(eval_genomes, 10)
