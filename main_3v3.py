@@ -280,16 +280,16 @@ def endgame_fitness():
     if(score_data['A']>score_data['B']):
         fitness_recorder['A']+=100
         fitness_recorder['B']-=100
-        print('A win')
+        # print('A win')
     elif(score_data['A']<score_data['B']):
         fitness_recorder['A']-=100
         fitness_recorder['B']+=100
-        print('B win')
+        # print('B win')
     else:
         # draw
         fitness_recorder['A']+=25
         fitness_recorder['B']+=25
-        print('Got Draw')
+        # print('Got Draw')
 
 def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1=True):
     player = self_team[id_self]
@@ -534,7 +534,7 @@ def game(window, width, height, genomes, config, doRandom=False):
     constant = 2/min_dim
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 15.0
+    max_ronde_time = 3.5
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -661,7 +661,7 @@ def eval_genomes(genomes, config):
             players = genomes[id_genome:len(genomes)]
             kurang = loncat-len(players)
             sisa = genomes[0:kurang]
-            print(sisa[0][1].fitness)
+            # print(sisa[0][1].fitness)
             players.extend(sisa)
 
             set_fitness_zero(players)
@@ -670,9 +670,13 @@ def eval_genomes(genomes, config):
             if(fq):break
             fq = game(window, WIDTH, HEIGHT, players, config, True)
             if(fq):break
-            
+            fq = game(window, WIDTH, HEIGHT, players, config, True)
+            if(fq):break
+
             players = players[::-1] # reverse it for reverse role
             fq = game(window, WIDTH, HEIGHT, players, config, False)
+            if(fq):break
+            fq = game(window, WIDTH, HEIGHT, players, config, True)
             if(fq):break
             fq = game(window, WIDTH, HEIGHT, players, config, True)
             if(fq):break
@@ -689,9 +693,13 @@ def eval_genomes(genomes, config):
             if(fq):break
             fq = game(window, WIDTH, HEIGHT, players, config, True)
             if(fq):break
+            fq = game(window, WIDTH, HEIGHT, players, config, True)
+            if(fq):break
             
             players = players[::-1] # reverse it for reverse role
             fq = game(window, WIDTH, HEIGHT, players, config, False)
+            if(fq):break
+            fq = game(window, WIDTH, HEIGHT, players, config, True)
             if(fq):break
             fq = game(window, WIDTH, HEIGHT, players, config, True)
             if(fq):break
@@ -707,24 +715,24 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-5')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-24')
+    # p.config=config
     # p.population = checkpointer.population
     # checkpointer.
-    # p.config=config
 
 
     # p.run(eval_genomes, 10)
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(20))
+    # p.add_reporter(neat.StdOutReporter(True))
+    # stats = neat.StatisticsReporter()
+    # p.add_reporter(stats)
+    # p.add_reporter(neat.Checkpointer(20))
 
     # Run for up to 300 generations.
     winner = p.run(eval_genomes, 300)
 
     # Display the winning genome.
-    print('\nBest genome:\n{!s}'.format(winner))
+    # print('\nBest genome:\n{!s}'.format(winner))
 
     # # Show output of the most fit genome against training data.
     # print('\nOutput:')
@@ -736,8 +744,8 @@ def run(config_file):
     # node_names = {-1: 'A', -2: 'B', 0: 'A XOR B'}
     # visualize.draw_net(config, winner, True, node_names=node_names)
     # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
+    # visualize.plot_stats(stats, ylog=False, view=True)
+    # visualize.plot_species(stats, view=True)
 
     import pickle
     with open('winner.pkl', 'wb') as mfile:
@@ -745,6 +753,13 @@ def run(config_file):
         mfile.close()
         print('FINISHED')
 
+    with open('pop.pkl', 'wb') as mfile:
+        pickle.dump(p, mfile)
+        mfile.close()
+        print('save population')
+    # winner =  pickle.load(open('winner.pkl', 'rb'))
+    # players = [[1, winner], [2, winner], [3, winner], [4, winner], [5, winner], [6, winner]]
+    # game(window, WIDTH, HEIGHT, players, config, False)
 
 
 if __name__ == '__main__':
