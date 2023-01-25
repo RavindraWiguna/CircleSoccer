@@ -493,7 +493,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     ball_sensor_B1.begin    = team_b1_handler
 
     if(doRandom):
-        objs = [ball, *team_A, *team_B]
+        objs = [*team_A, *team_B]
         for obj in objs:
             rx = random.uniform(100, width-100)
             ry = random.uniform(100, height-100)
