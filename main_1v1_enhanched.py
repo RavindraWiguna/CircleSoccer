@@ -700,7 +700,6 @@ def eval_genomes(genomes, config):
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
             if(fq):break
-            break
 
 
 
@@ -726,10 +725,10 @@ def run(config_file):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    # p.add_reporter(neat.Checkpointer(20))
+    p.add_reporter(neat.Checkpointer(30))
 
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 1)
+    winner = p.run(eval_genomes, 1000)
 
     # Display the winning genome.
     # print('\nBest genome:\n{!s}'.format(winner))
@@ -747,16 +746,16 @@ def run(config_file):
     # visualize.plot_stats(stats, ylog=False, view=True)
     # visualize.plot_species(stats, view=True)
 
-    # import pickle
-    # with open('winner.pkl', 'wb') as mfile:
-        # pickle.dump(winner, mfile)
-        # mfile.close()
-        # print('FINISHED')
+    import pickle
+    with open('winner.pkl', 'wb') as mfile:
+        pickle.dump(winner, mfile)
+        mfile.close()
+        print('FINISHED')
 
-    # with open('pop.pkl', 'wb') as mfile:
-        # pickle.dump(p, mfile)
-        # mfile.close()
-        # print('save population')
+    with open('pop.pkl', 'wb') as mfile:
+        pickle.dump(p, mfile)
+        mfile.close()
+        print('save population')
     # p =  pickle.load(open('pop.pkl', 'rb'))
     # players = [[1, winner], [2, winner], [3, winner], [4, winner], [5, winner], [6, winner]]
     # game(window, WIDTH, HEIGHT, players, config, False)
