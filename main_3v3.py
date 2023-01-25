@@ -653,56 +653,50 @@ def set_fitness_zero(genomes):
     for gid, genome in genomes:
         genome.fitness= 0.0
 
+def create_team(genomes, id):
+    if(id + 3 <= len(genomes)):
+        return genomes[id:id+3], id+3
+    else:
+        print('nanggung..., skip aja males mikir')
+        return None, len(genomes)
+    # else:
+    #     curTim = genomes[id:len(genomes)]
+    #     kurang = 3-len(curTim)
+    #     sisa = genomes[0:sisa]
+    #     curTim.extend(sisa)
+    #     return curTim, len(genomes)
+
+def make_teams(genomes):
+    teams = []
+    id = 0
+    while id < len(genomes):
+        team, new_id = create_team(genomes, id)
+        if(team):
+            teams.append(team)
+        id=new_id
+    return teams
 
 def eval_genomes(genomes, config):
-    loncat = 6
-    for id_genome in range(0, len(genomes), loncat):
-        if(id_genome+loncat > len(genomes)):
-            players = genomes[id_genome:len(genomes)]
-            kurang = loncat-len(players)
-            sisa = genomes[0:kurang]
-            # print(sisa[0][1].fitness)
-            players.extend(sisa)
-
-            set_fitness_zero(players)
-
-            fq = game(window, WIDTH, HEIGHT, players, config, False)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-
-            players = players[::-1] # reverse it for reverse role
-            fq = game(window, WIDTH, HEIGHT, players, config, False)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-
-            # uh bagi sisa kita rata-ratain terus kali 2 a.k.a bagi 2 (/8 *4)
-            for genomeid, genome in sisa:
-                genome.fitness /= 2
-        else:
-            players = genomes[id_genome:id_genome+loncat]
+    teams = make_teams(genomes)
+    set_fitness_zero(genomes)
+    doit = True
+    total_main_random=4
+    for id1 in range(len(teams)):
+        if(not doit):
+            break
+        for id2 in range(id1+1, len(teams)):
+            players = [*teams[id1], *teams[id2]]
+            # main game 4 kali
+            for _ in range(total_main_random-1):
+                game(window, WIDTH, HEIGHT, players, config, True)
             
-            set_fitness_zero(players)
+            # terakhir ada fq
+            fq = game(window, WIDTH, HEIGHT, players, config, True)
+            if(fq):
+                doit=False
+                break
 
-            fq = game(window, WIDTH, HEIGHT, players, config)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-            
-            players = players[::-1] # reverse it for reverse role
-            fq = game(window, WIDTH, HEIGHT, players, config, False)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):break
+
 
 def run(config_file):
     # Load configuration.
@@ -715,7 +709,7 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-24')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-44')
     # p.config=config
     # p.population = checkpointer.population
     # checkpointer.
@@ -757,9 +751,10 @@ def run(config_file):
         pickle.dump(p, mfile)
         mfile.close()
         print('save population')
-    # winner =  pickle.load(open('winner.pkl', 'rb'))
+    # p =  pickle.load(open('pop.pkl', 'rb'))
     # players = [[1, winner], [2, winner], [3, winner], [4, winner], [5, winner], [6, winner]]
     # game(window, WIDTH, HEIGHT, players, config, False)
+    # p.run(eval_genomes, 10)
 
 
 if __name__ == '__main__':
