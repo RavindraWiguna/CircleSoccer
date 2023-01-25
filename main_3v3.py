@@ -649,9 +649,9 @@ def game(window, width, height, genomes, config, doRandom=False):
     # pygame.quit()
     return forceQuit
 
-def set_fitness_zero(genomes):
+def set_fitness_val(genomes, val=0.0):
     for gid, genome in genomes:
-        genome.fitness= 0.0
+        genome.fitness= val
 
 def create_team(genomes, id):
     if(id + 3 <= len(genomes)):
@@ -678,7 +678,8 @@ def make_teams(genomes):
 
 def eval_genomes(genomes, config):
     teams = make_teams(genomes)
-    set_fitness_zero(genomes)
+    print('ada', len(teams))
+    set_fitness_val(genomes)
     doit = True
     total_main_random=4
     for id1 in range(len(teams)):
