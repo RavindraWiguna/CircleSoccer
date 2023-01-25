@@ -10,6 +10,7 @@ from math_util import *
 
 import time
 import os
+import random
 from functools import partial
 import neat
 from neatUtils import visualize
@@ -284,7 +285,7 @@ def endgame_fitness():
 
 ### ==== MAIN FUNCTION ==== ###
 
-def game(window, width, height, genomes, config):
+def game(window, width, height, genomes, config, doRandom=False):
     global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder
     '''
     =============================
@@ -393,6 +394,13 @@ def game(window, width, height, genomes, config):
     ball_sensor_B1.begin    = team_b1_handler
     ball_sensor_B2.begin    = team_b2_handler
     ball_sensor_B3.begin     = team_b2_handler
+
+    if(doRandom):
+        objs = [ball, *team_A, *team_B]
+        for obj in objs:
+            rx = random.uniform(30, width-30)
+            ry = random.uniform(30, height-30)
+            obj.body._set_position((rx, ry))
 
 
     '''
@@ -627,7 +635,7 @@ def eval_genomes(genomes, config):
                 break
             
             six_players = six_players[::-1] # reverse it for reverse role
-            fq = game(window, WIDTH, HEIGHT, six_players, config)
+            fq = game(window, WIDTH, HEIGHT, six_players, config, True)
             if(fq):
                 break
             # uh bagi sisa kita rata-ratain terus kali 2 a.k.a bagi 2 (/4 *2)
@@ -640,7 +648,7 @@ def eval_genomes(genomes, config):
                 break
             six_players = six_players[::-1] # reverse it for reverse role
             
-            fq = game(window, WIDTH, HEIGHT, six_players, config)
+            fq = game(window, WIDTH, HEIGHT, six_players, config, True)
             if(fq):
                 break
 
