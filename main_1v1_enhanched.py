@@ -396,6 +396,14 @@ def process_output(output, genome, multiplier):
 
     return cumul_fx, cumul_fy
 
+# FITNESS BALLZ
+def calculate_ball_fitness(player, ball):
+    final_distance_ball = calculate_distance(player.body.position, ball.body.position)
+    max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
+    fitness = 1 - final_distance_ball/max_fitness
+    fitness *=100
+    return fitness
+
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
@@ -617,14 +625,25 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if (time.perf_counter()-ronde_time) > max_ronde_time:
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
-            print('time out')
+            # punish
+            fitness_recorder['A'] -= 50
+            fitness_recorder['B'] -= 50
+            print('time out! PUNISH half kalo kalah')
             break
 
     # calculate sisa fitness tim A & B + individu
+    
     if(asA):
         genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
+        player = team_A[0]
     else:
+        player = team_B[0]
         genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
+
+    # BALLZ
+    fitness_ballz = calculate_ball_fitness(player, ball)
+    genomes[0][1].fitness +=fitness_ballz
+    # print('ballfit', fitness_ballz)
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -680,7 +699,7 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-44')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-29')
     # p.config=config
     # p.population = checkpointer.population
     # checkpointer.
