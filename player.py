@@ -9,7 +9,7 @@ class Player(CircleObject):
     ELASTICITY=0.75
     MAX_ACC = 100 # since m*a = F, i guess call this acc, i want bigger mass, faster stop
     PIVOT_MAX_FORCE = MASS*MAX_ACC # bigger = faster stop
-    TERMINAL_VEL_MAG = 500
+    TERMINAL_VEL_MAG = 1100
     def __init__(self, space, position, color) -> None:
         super().__init__(space, position, self.RADIUS, self.MASS, self.ELASTICITY, self.PIVOT_MAX_FORCE, color)
     

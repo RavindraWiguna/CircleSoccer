@@ -619,6 +619,8 @@ def game(window, width, height, genomes, config, doRandom=False):
 
     genomes[1][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
     
+    # print('genome:', genomes[0][0], 'f:', genomes[0][1].fitness)
+    # print('genome:', genomes[1][0], 'f:', genomes[1][1].fitness)
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -631,6 +633,10 @@ def game(window, width, height, genomes, config, doRandom=False):
     # pygame.quit()
     return forceQuit
 
+def set_fitness_zero(genomes):
+    for gid, genome in genomes:
+        genome.fitness= 0.0
+
 
 def eval_genomes(genomes, config):
     loncat =2
@@ -641,6 +647,9 @@ def eval_genomes(genomes, config):
             sisa = genomes[0:kurang]
             print(sisa[0][1].fitness)
             two_players.extend(sisa)
+
+            set_fitness_zero(two_players)
+
             fq = game(window, WIDTH, HEIGHT, two_players, config, False)
             if(fq):break
             fq = game(window, WIDTH, HEIGHT, two_players, config, True)
@@ -657,6 +666,9 @@ def eval_genomes(genomes, config):
                 genome.fitness /= 2
         else:
             two_players = genomes[id_genome:id_genome+loncat]
+            
+            set_fitness_zero(two_players)
+
             fq = game(window, WIDTH, HEIGHT, two_players, config)
             if(fq):break
             fq = game(window, WIDTH, HEIGHT, two_players, config, True)
@@ -679,7 +691,7 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-17')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-5')
     # p.population = checkpointer.population
     # checkpointer.
     # p.config=config
