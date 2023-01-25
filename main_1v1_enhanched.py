@@ -614,6 +614,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # lsg break
             # endgame_fitness() no move ga dikasi reward
             isRun=False
+            # punish!!!!!!!!!!
+            fitness_recorder['A']-=1000
+            fitness_recorder['B']-=1000
             # print('no move')
         else:
             game_phase=GamePhase.Normal
