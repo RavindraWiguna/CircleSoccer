@@ -300,7 +300,6 @@ def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, wid
         self_team_data      = get_team_pos_vel(self_team, id_self, min_dim, norm_div)
     elif(type_game=='1v1' or type_game=='solo'):
         self_team_data      = [0.0, 0.0, 0.0, 0.0]*2 # pos x pos y, vx, vy
-        # print('a')
 
     # oponent posv
     if(type_game=='3v3'):
@@ -308,17 +307,16 @@ def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, wid
     elif(type_game=='1v1'):
         opponent_data       = get_player_pos_vel(opo_team[0].body, constant, norm_div)
         opponent_data.extend([0.0, 0.0, 0.0, 0.0]*2)
-        # print('a')
     elif(type_game=='solo'):
         opponent_data = [0]*12
 
     # ball posv dis
     ball_data               = get_ball_pos_vel(ball, min_dim, norm_div)
     ball_distance           = get_position_distance(player.body.position, ball.body.position, constant)
-    
+
     # wall dis
     wall_data               = get_boundary_distance(player.body.position, width, height, min_dim)
-    
+
     # goals dis
     own_goal_data           = get_position_distance(player.body.position, self_goal[0].body.position, constant)
     own_goal_tiang_l        = get_position_distance(player.body.position, self_goal[1].body.position, constant)
@@ -326,13 +324,26 @@ def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, wid
     opponent_goal_data      = get_position_distance(player.body.position, opo_goal[0].body.position, constant)
     opponent_goal_tiang_l   = get_position_distance(player.body.position, opo_goal[1].body.position, constant)
     opponent_goal_tiang_r   = get_position_distance(player.body.position, opo_goal[2].body.position, constant)
-
     the_input = [*self_pos_vel, *self_team_data, *opponent_data, *ball_data, *ball_distance,
             *wall_data, *own_goal_data, *own_goal_tiang_r, 
             *own_goal_tiang_l, *opponent_goal_data, *opponent_goal_tiang_l,
             *opponent_goal_tiang_r]
     
+
+    # print(self_pos_vel, 'selfposvel')
+    # print(self_team_data, 'timpv')
+    # print(opponent_data, 'opopv')
+    # print(ball_data, 'bdat')
+    # print(ball_distance, 'bdis')
+    # print(wall_data, 'walldat')
+    # print(own_goal_data, 'ogdat')
+    # print(own_goal_tiang_l, 'ogtldat')
+    # print(own_goal_tiang_r, 'ogtrdat')
+    # print(opponent_goal_data, 'opgdat')
+    # print(opponent_goal_tiang_l, 'opgtldat')
+    # print(opponent_goal_tiang_r, 'opgtrdat')
     # print(the_input)
+    # raise NameError('ehe')
     return the_input
 
 def kick_player(player):
