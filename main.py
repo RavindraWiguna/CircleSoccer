@@ -92,21 +92,21 @@ def goal_a_handler(arbiter, space, data):
         score_data['B']+=1
         fitness_recorder['B']+=12
         fitness_recorder['A']-=20
-        print('B score| A got -20| B got 12')
+        print('A -20| B + 12')
         game_phase=GamePhase.JUST_GOAL
 
-        if(isTeamA(last_ball_toucher_id)):
+        if(isTeamB(last_ball_toucher_id)):
             # eyo dia ngegolin
             fitness_recorder[last_ball_toucher_id]+=30.0
-            print(last_ball_toucher_id, 'score the goal for tim dia')
-            if(isTeamA(second_last_toucher)):
+            print(last_ball_toucher_id, 'score the goal for tim B dia')
+            if(isTeamB(second_last_toucher)):
                 # hoo ngassist
                 fitness_recorder[second_last_toucher]+=15.0
-                print(second_last_toucher, 'is the assist for tim dia')
+                print(second_last_toucher, 'is the assist for tim B dia')
         else:
-            # bruh tim B ngegol ke B? bunuh diri
+            # bruh tim A ngegol ke A? bunuh diri
             fitness_recorder[last_ball_toucher_id]-=50.0
-            print('dummy dumb dumb', last_ball_toucher_id, 'just make own goal from tim B')
+            print('A dummy dumb dumb', last_ball_toucher_id, 'just make own goal for tim B')
 
     return True
 
@@ -116,22 +116,22 @@ def goal_b_handler(arbiter, space, data):
         score_data['A']+=1
         fitness_recorder['A']+=12
         fitness_recorder['B']-=20
-        print('A score| A got 12| B got -20 ')
+        print('A + 12| B -20 ')
         game_phase=GamePhase.JUST_GOAL
 
-        if(isTeamA(last_ball_toucher_id)):
-            # eyo dia bunuh diri
+        if(isTeamB(last_ball_toucher_id)):
+            # eyo dia bunuh diri b skor ke b
             fitness_recorder[last_ball_toucher_id]-=50.0
-            print('bruh tim A owngoal, dumb', last_ball_toucher_id)
+            print('tim B owngoal,', last_ball_toucher_id)
             
         else:
-            # bruh tim B ngegol ke A? mantap
+            # bruh tim A ngegol ke B? mantap
             fitness_recorder[last_ball_toucher_id]+=30.0
-            print('this is messii from tim B', last_ball_toucher_id)
-            if(isTeamB(second_last_toucher)):
+            print('messii of tim A', last_ball_toucher_id)
+            if(isTeamA(second_last_toucher)):
                 # hoo ngassist
                 fitness_recorder[second_last_toucher]+=15.0
-                print('assit ma men B', second_last_toucher)
+                print('assit ma men A', second_last_toucher)
 
     return True
 
