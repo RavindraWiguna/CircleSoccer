@@ -212,15 +212,13 @@ def reset_score():
     score_data['A']=0
     score_data['B']=0
 
-def get_ball_pos_vel(ball, min_dim, norm_vel_div):
+def get_ball_pos_vel(ball, constant, norm_vel_div):
     ball_datas = []
     x,y = ball.body.position
-    x = -1 + x/min_dim * 2
-    y = -1 + y/min_dim * 2 # yes ttp pakek max x
+    x = -1 + (x * constant)
+    y = -1 + (y  * constant)
 
-    vx, vy = ball.body.velocity
-    vx /= norm_vel_div
-    vy /= norm_vel_div
+    vx, vy = ball.body.velocity/norm_vel_div
     ball_datas.extend([x,y, vx, vy])
     return ball_datas
 
@@ -246,14 +244,13 @@ def get_team_pos_vel(team, skip_id, min_dim, norm_vel_div):
     return team_mate_pos_vel
     
 
-def get_boundary_distance(position, max_x, max_y, min_dim):
+def get_boundary_distance(position, max_x, max_y, constant):
     # top wall -> sama dgn y koor
     # ---
     
     # left wall -> sama dgn x koor
     # ---
 
-    constant = 2/min_dim
     # bottom wall
     d_bottom = max_y - position[1]
     d_bottom *= constant
@@ -311,11 +308,11 @@ def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, wid
         opponent_data = [0]*12
 
     # ball posv dis
-    ball_data               = get_ball_pos_vel(ball, min_dim, norm_div)
+    ball_data               = get_ball_pos_vel(ball, constant, norm_div)
     ball_distance           = get_position_distance(player.body.position, ball.body.position, constant)
 
     # wall dis
-    wall_data               = get_boundary_distance(player.body.position, width, height, min_dim)
+    wall_data               = get_boundary_distance(player.body.position, width, height, constant)
 
     # goals dis
     own_goal_data           = get_position_distance(player.body.position, self_goal[0].body.position, constant)
@@ -324,6 +321,7 @@ def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, wid
     opponent_goal_data      = get_position_distance(player.body.position, opo_goal[0].body.position, constant)
     opponent_goal_tiang_l   = get_position_distance(player.body.position, opo_goal[1].body.position, constant)
     opponent_goal_tiang_r   = get_position_distance(player.body.position, opo_goal[2].body.position, constant)
+    
     the_input = [*self_pos_vel, *self_team_data, *opponent_data, *ball_data, *ball_distance,
             *wall_data, *own_goal_data, *own_goal_tiang_r, 
             *own_goal_tiang_l, *opponent_goal_data, *opponent_goal_tiang_l,
@@ -375,8 +373,7 @@ def existMovementCheck(objs):
     return existMovement
 
 def cap_magnitude(val, max_val, min_val):
-    val = min(max_val, val)
-    val = max(min_val, val)
+    val = max(min_val, min(max_val, val))
     return val
 
 # get fx, fy
@@ -637,9 +634,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             # punish
-            fitness_recorder['A'] -= 50
-            fitness_recorder['B'] -= 50
-            print('time out! PUNISH half kalo kalah')
+            fitness_recorder['A'] -= 10000
+            fitness_recorder['B'] -= 10000
+            print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
     # calculate sisa fitness tim A & B + individu
@@ -703,6 +700,7 @@ def eval_genomes(genomes, config):
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
             if(fq):break
+            break
 
 
 
@@ -713,12 +711,12 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    # p = neat.Population(config)
 
     # get previous population
     # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-29')
-    # p.config=config
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-106')
+    p.config=config
     # p.population = checkpointer.population
     # checkpointer.
 
@@ -728,10 +726,10 @@ def run(config_file):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(20))
+    # p.add_reporter(neat.Checkpointer(20))
 
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 300)
+    winner = p.run(eval_genomes, 1)
 
     # Display the winning genome.
     # print('\nBest genome:\n{!s}'.format(winner))
@@ -746,19 +744,19 @@ def run(config_file):
     # node_names = {-1: 'A', -2: 'B', 0: 'A XOR B'}
     # visualize.draw_net(config, winner, True, node_names=node_names)
     # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
+    # visualize.plot_stats(stats, ylog=False, view=True)
+    # visualize.plot_species(stats, view=True)
 
-    import pickle
-    with open('winner.pkl', 'wb') as mfile:
-        pickle.dump(winner, mfile)
-        mfile.close()
-        print('FINISHED')
+    # import pickle
+    # with open('winner.pkl', 'wb') as mfile:
+        # pickle.dump(winner, mfile)
+        # mfile.close()
+        # print('FINISHED')
 
-    with open('pop.pkl', 'wb') as mfile:
-        pickle.dump(p, mfile)
-        mfile.close()
-        print('save population')
+    # with open('pop.pkl', 'wb') as mfile:
+        # pickle.dump(p, mfile)
+        # mfile.close()
+        # print('save population')
     # p =  pickle.load(open('pop.pkl', 'rb'))
     # players = [[1, winner], [2, winner], [3, winner], [4, winner], [5, winner], [6, winner]]
     # game(window, WIDTH, HEIGHT, players, config, False)
@@ -773,3 +771,4 @@ if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, './neatUtils/config-neat-new')
     run(config_path)
+    pygame.quit()

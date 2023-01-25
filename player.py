@@ -16,7 +16,8 @@ class Player(CircleObject):
 
     def _apply_force(self, force_vec):
         # print('ap', force_vec, self.body.center_of_gravity)
-        self.body.apply_force_at_local_point(force_vec, (self.body.center_of_gravity))
+        # self.body.apply_force_at_local_point(force_vec, (self.body.center_of_gravity))
+        self.body.apply_force_at_local_point(force_vec, (0,0))
         self.cap_vel()
 
     def move_up(self, force_magnitude=100):

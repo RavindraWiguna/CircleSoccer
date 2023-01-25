@@ -28,3 +28,5 @@ jarak ke oposite goal -> 38
 jarak ke oposite goal -> 40
 jarak ke oposite goal tiang -> 42
 dx,dy ke ball -> 44
+
+& C:/Users/Avin/anaconda3/envs/AI_and_Vision/python.exe -m cProfile -s ncalls  d:/Sem5Faster/pypy/pygameai/futbol/main_1v1_enhanched.py > profiling.txt
