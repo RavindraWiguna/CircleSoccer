@@ -508,7 +508,7 @@ def game(window, width, height, genomes, config, doRandom=False):
 
     '''
     ====================
-       Making 6 models
+       Making 2 models
     ====================
     '''
     team_A_net = [
@@ -767,5 +767,5 @@ if __name__ == '__main__':
     # here so that the script will run successfully regardless of the
     # current working directory.
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, './neatUtils/config-neat')
+    config_path = os.path.join(local_dir, './neatUtils/config-neat-new')
     run(config_path)
