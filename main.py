@@ -81,10 +81,10 @@ def create_boundaries(space, width, height, bwidth):
         space.add(body, shape)
 
 def isTeamA(id):
-    return id < 6
+    return id < 6 and id > 0
 
 def isTeamB(id):
-    return not isTeamA(id)
+    return id > 6
 
 def goal_a_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
