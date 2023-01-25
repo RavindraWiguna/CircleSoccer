@@ -568,6 +568,7 @@ def game(window, width, height, genomes, config, doRandom=False):
                 # start_time_after_goal=None
                 # ronde_time=time.perf_counter()
                 # end ronde
+                endgame_fitness()
                 isRun=False
                 print('get to 1 goal stop')
                 break
@@ -587,19 +588,21 @@ def game(window, width, height, genomes, config, doRandom=False):
             px, py = obj.body.position
             # print(px, py)
             if(px < 0 or py < 0 or px > width or py > height):
+                # endgame_fitness() keluar juga ga dikasi reward
                 isRun=False
                 print('out of bound')
                 break
 
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break
+            # endgame_fitness() no move ga dikasi reward
             isRun=False
             print('no move')
         else:
             game_phase=GamePhase.Normal
 
         if (time.perf_counter()-ronde_time) > max_ronde_time:
-            endgame_fitness()
+            endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             print('time out')
             break
