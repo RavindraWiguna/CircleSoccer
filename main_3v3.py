@@ -291,7 +291,7 @@ def endgame_fitness():
         fitness_recorder['B']+=25
         # print('Got Draw')
 
-def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1=True):
+def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1):
     player = self_team[id_self]
     # self team posv
     self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
@@ -563,7 +563,7 @@ def game(window, width, height, genomes, config, doRandom=False):
 
         for id, (net, genome) in enumerate(team_A_net):
             player = team_A[id]
-            input = make_input(team_A, team_B, goal_a, goal_b, ball, id, width, height, min_dim, norm_div, constant)
+            input = make_input(team_A, team_B, goal_a, goal_b, ball, id, width, height, min_dim, norm_div, constant, False)
             # output FX and FY
             output = net.activate(input)
             fx, fy = process_output(output, genome, multiplier=3060)
@@ -572,7 +572,7 @@ def game(window, width, height, genomes, config, doRandom=False):
         # gerakin tim b
         for id, (net, genome) in enumerate(team_B_net):
             player = team_B[id]
-            input = make_input(team_B, team_A, goal_b, goal_a, ball, id, width, height, min_dim, norm_div, constant)
+            input = make_input(team_B, team_A, goal_b, goal_a, ball, id, width, height, min_dim, norm_div, constant, False)
             # output FX and FY
             output = net.activate(input)
             fx, fy = process_output(output, genome, multiplier=3060)

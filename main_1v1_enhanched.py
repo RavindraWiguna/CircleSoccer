@@ -384,7 +384,7 @@ def process_output(output, genome, multiplier):
 
 ### ==== MAIN FUNCTION ==== ###
 
-def game(window, width, height, genomes, config, doRandom=False):
+def game(window, width, height, genomes, config, doRandom=False, asA=True):
     global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder
     '''
     =============================
@@ -454,45 +454,21 @@ def game(window, width, height, genomes, config, doRandom=False):
     team_A = [
         # keeper (ceritanya)
         Player(space, (width/8, height/2), COLOR_A),
-        
-        # left wing 
-        Player(space, (width/8*3, height/4), COLOR_A),
-
-        # right wing
-        Player(space, (width/8*3, height/4*3), COLOR_A),
     ]
     team_A[0].shape.collision_type=CollisionType.A_P1.value
-    team_A[1].shape.collision_type=CollisionType.A_P2.value
-    team_A[2].shape.collision_type=CollisionType.A_P3.value
 
     ball_sensor_A1          = space.add_collision_handler(ball.shape.collision_type, team_A[0].shape.collision_type)
-    ball_sensor_A2          = space.add_collision_handler(ball.shape.collision_type, team_A[1].shape.collision_type)
-    ball_sensor_A3          = space.add_collision_handler(ball.shape.collision_type, team_A[2].shape.collision_type)
     ball_sensor_A1.begin    = team_a1_handler
-    ball_sensor_A2.begin    = team_a2_handler
-    ball_sensor_A3.begin     = team_a2_handler
 
     COLOR_B = (0, 100, 200, 100)
     team_B = [
         # keeper (ceritanya)
         Player(space, (width/8*7, height/2), COLOR_B),
-        
-        # left wing 
-        Player(space, (width/8*5, height/4), COLOR_B),
-
-        # right wing
-        Player(space, (width/8*5, height/4*3), COLOR_B),
     ]
     team_B[0].shape.collision_type=CollisionType.B_P1.value
-    team_B[1].shape.collision_type=CollisionType.B_P2.value
-    team_B[2].shape.collision_type=CollisionType.B_P3.value
 
     ball_sensor_B1          = space.add_collision_handler(ball.shape.collision_type, team_B[0].shape.collision_type)
-    ball_sensor_B2          = space.add_collision_handler(ball.shape.collision_type, team_B[1].shape.collision_type)
-    ball_sensor_B3          = space.add_collision_handler(ball.shape.collision_type, team_B[2].shape.collision_type)
     ball_sensor_B1.begin    = team_b1_handler
-    ball_sensor_B2.begin    = team_b2_handler
-    ball_sensor_B3.begin     = team_b2_handler
 
     if(doRandom):
         objs = [ball, *team_A, *team_B]
@@ -502,27 +478,23 @@ def game(window, width, height, genomes, config, doRandom=False):
             obj.body._set_position((rx, ry))
 
     # kick player
-    need_kick = [team_A[1], team_A[2], team_B[1], team_B[2]]
+    if(asA):
+        need_kick = [team_B[0]]
+    else:
+        need_kick = [team_A[0]]
+    
     for player in need_kick:
         kick_player(player)
 
     '''
     ====================
-       Making 2 models
+       Making 1 models
     ====================
     '''
-    team_A_net = [
+
+    team_net = [
         (neat.nn.RecurrentNetwork.create(genomes[0][1], config), genomes[0]),
-        # (neat.nn.RecurrentNetwork.create(genomes[0][1], config), genomes[1]),
-        # (neat.nn.RecurrentNetwork.create(genomes[0][1], config), genomes[2]),
     ]
-
-    team_B_net = [
-        (neat.nn.RecurrentNetwork.create(genomes[1][1], config), genomes[1]),
-        # (neat.nn.RecurrentNetwork.create(genomes[4][1], config), genomes[4]),
-        # (neat.nn.RecurrentNetwork.create(genomes[5][1], config), genomes[5]),
-    ]
-
 
     # initlaize fitness
     for genomeid, genome in genomes:
@@ -564,15 +536,18 @@ def game(window, width, height, genomes, config, doRandom=False):
             doVisualize=True
         
         existMovement=False
-        # gerakin tim a
 
-        for id, (net, genome) in enumerate(team_A_net):
-            player = team_A[id]
+        # gerakin player
+        if(asA):
+            player = team_A[0]
             input = make_input(team_A, team_B, goal_a, goal_b, ball, id, width, height, min_dim, norm_div, constant)
             # output FX and FY
             output = net.activate(input)
             fx, fy = process_output(output, genome, multiplier=3060)
             player._apply_force((fx, fy)) # di cap di sini
+
+        for id, (net, genome) in enumerate(team_net):
+
 
         # gerakin tim b
         for id, (net, genome) in enumerate(team_B_net):
