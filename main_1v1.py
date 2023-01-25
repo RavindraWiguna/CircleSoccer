@@ -360,6 +360,11 @@ def existMovementCheck(objs):
     
     return existMovement
 
+def cap_magnitude(val, max_val, min_val):
+    val = min(max_val, val)
+    val = max(min_val, val)
+    return val
+
 # get fx, fy
 def process_output(output, genome, multiplier):
     cumul_fx = output[0] - output[1] # (x positive  - (x negative) ) -> if x- > x+, then cumul fx < 0 
@@ -367,6 +372,9 @@ def process_output(output, genome, multiplier):
 
     cumul_fx*=multiplier
     cumul_fy*=multiplier
+
+    cumul_fx = cap_magnitude(cumul_fx, 18000, -18000)
+    cumul_fy = cap_magnitude(cumul_fy, 18000, -18000)
 
     # punish for doing nothing
     if(abs(cumul_fx) < 1e-5 and abs(cumul_fy) < 1e-5):
@@ -540,12 +548,17 @@ def game(window, width, height, genomes, config, doRandom=False):
     total_ronde=1
     ronde_time = time.perf_counter()
     while isRun:
+        doVisualize=False
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 forceQuit=True
                 isRun=False
                 print('force quit')
                 break
+        
+        keys = pygame.key.get_pressed()
+        if(keys[pygame.K_SPACE]):
+            doVisualize=True
         
         existMovement=False
         # gerakin tim a
@@ -570,9 +583,10 @@ def game(window, width, height, genomes, config, doRandom=False):
         # update world and graphics
         # for _ in range(step):
         space.step(dt)
-        draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
-        pygame.display.update()
-        # clock.tick(fps)
+        if(doVisualize):
+            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
+            pygame.display.update()
+            # clock.tick(fps)
 
         if(game_phase==GamePhase.JUST_GOAL):
 
