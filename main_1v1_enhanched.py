@@ -291,24 +291,26 @@ def endgame_fitness():
         fitness_recorder['B']+=25
         # print('Got Draw')
 
-def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1):
+def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, type_game):
     player = self_team[id_self]
     # self team posv
     self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
     
-    if(not is1v1):
+    if(type_game=='3v3'):
         self_team_data      = get_team_pos_vel(self_team, id_self, min_dim, norm_div)
-    else:
+    elif(type_game=='1v1' or type_game=='solo'):
         self_team_data      = [0.0, 0.0, 0.0, 0.0]*2 # pos x pos y, vx, vy
         # print('a')
 
     # oponent posv
-    if(not is1v1):
+    if(type_game=='3v3'):
         opponent_data       = get_team_pos_vel(opo_team, -1, min_dim, norm_div)
-    else:
+    elif(type_game=='1v1'):
         opponent_data       = get_player_pos_vel(opo_team[0].body, constant, norm_div)
         opponent_data.extend([0.0, 0.0, 0.0, 0.0]*2)
         # print('a')
+    elif(type_game=='solo'):
+        opponent_data = [0]*12
 
     # ball posv dis
     ball_data               = get_ball_pos_vel(ball, min_dim, norm_div)
@@ -542,7 +544,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(asA):
             player = team_A[0]
             net, genome = team_net[0]
-            the_input = make_data_masuk(team_A, team_B, goal_a, goal_b, ball, 0, width, height, min_dim, norm_div, constant, True)
+            the_input = make_data_masuk(team_A, team_B, goal_a, goal_b, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
             # output FX and FY
             output = net.activate(the_input)
             fx, fy = process_output(output, genome, multiplier=3060)
@@ -550,7 +552,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         else:
             player = team_B[0]
             net, genome = team_net[0]
-            the_input = make_data_masuk(team_B, team_A, goal_b, goal_a, ball, 0, width, height, min_dim, norm_div, constant, True)
+            the_input = make_data_masuk(team_B, team_A, goal_b, goal_a, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
             # output FX and FY
             output = net.activate(the_input)
             fx, fy = process_output(output, genome, multiplier=3060)
