@@ -641,27 +641,32 @@ def eval_genomes(genomes, config):
             sisa = genomes[0:kurang]
             print(sisa[0][1].fitness)
             six_players.extend(sisa)
-            fq = game(window, WIDTH, HEIGHT, six_players, config)
-            if(fq):
-                break
+            fq = game(window, WIDTH, HEIGHT, six_players, config, False)
+            if(fq):break
+            fq = game(window, WIDTH, HEIGHT, six_players, config, True)
+            if(fq):break
             
             six_players = six_players[::-1] # reverse it for reverse role
+            fq = game(window, WIDTH, HEIGHT, six_players, config, False)
+            if(fq):break
             fq = game(window, WIDTH, HEIGHT, six_players, config, True)
-            if(fq):
-                break
-            # uh bagi sisa kita rata-ratain terus kali 2 a.k.a bagi 2 (/4 *2)
+            if(fq):break
+
+            # uh bagi sisa kita rata-ratain terus kali 2 a.k.a bagi 2 (/8 *4)
             for genomeid, genome in sisa:
                 genome.fitness /= 2
         else:
             six_players = genomes[id_genome:id_genome+6]
             fq = game(window, WIDTH, HEIGHT, six_players, config)
-            if(fq):
-                break
-            six_players = six_players[::-1] # reverse it for reverse role
-            
+            if(fq):break
             fq = game(window, WIDTH, HEIGHT, six_players, config, True)
-            if(fq):
-                break
+            if(fq):break
+            
+            six_players = six_players[::-1] # reverse it for reverse role
+            fq = game(window, WIDTH, HEIGHT, six_players, config, False)
+            if(fq):break
+            fq = game(window, WIDTH, HEIGHT, six_players, config, True)
+            if(fq):break
 
 def run(config_file):
     # Load configuration.
