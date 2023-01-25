@@ -92,21 +92,21 @@ def goal_a_handler(arbiter, space, data):
         score_data['B']+=1
         fitness_recorder['B']+=12
         fitness_recorder['A']-=20
-        print('A -20| B + 12')
+        # print('A -20| B + 12')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamB(last_ball_toucher_id)):
             # eyo dia ngegolin
             fitness_recorder[last_ball_toucher_id]+=30.0
-            print(last_ball_toucher_id, 'score the goal for tim B dia')
+            # print(last_ball_toucher_id, 'score the goal for tim B dia')
             if(isTeamB(second_last_toucher)):
                 # hoo ngassist
                 fitness_recorder[second_last_toucher]+=15.0
-                print(second_last_toucher, 'is the assist for tim B dia')
+                # print(second_last_toucher, 'is the assist for tim B dia')
         else:
             # bruh tim A ngegol ke A? bunuh diri
             fitness_recorder[last_ball_toucher_id]-=50.0
-            print('A dummy dumb dumb', last_ball_toucher_id, 'just make own goal for tim B')
+            # print('A dummy dumb dumb', last_ball_toucher_id, 'just make own goal for tim B')
 
     return True
 
@@ -116,22 +116,22 @@ def goal_b_handler(arbiter, space, data):
         score_data['A']+=1
         fitness_recorder['A']+=12
         fitness_recorder['B']-=20
-        print('A + 12| B -20 ')
+        # print('A + 12| B -20 ')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamB(last_ball_toucher_id)):
             # eyo dia bunuh diri b skor ke b
             fitness_recorder[last_ball_toucher_id]-=50.0
-            print('tim B owngoal,', last_ball_toucher_id)
+            # print('tim B owngoal,', last_ball_toucher_id)
             
         else:
             # bruh tim A ngegol ke B? mantap
             fitness_recorder[last_ball_toucher_id]+=30.0
-            print('messii of tim A', last_ball_toucher_id)
+            # print('messii of tim A', last_ball_toucher_id)
             if(isTeamA(second_last_toucher)):
                 # hoo ngassist
                 fitness_recorder[second_last_toucher]+=15.0
-                print('assit ma men A', second_last_toucher)
+                # print('assit ma men A', second_last_toucher)
 
     return True
 
@@ -141,7 +141,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
     if(not fitness_recorder.__contains__(id_toucher)):
         fitness_recorder[id_toucher]=0
     
-    print(id_toucher, 'touch the ball')
+    # print(id_toucher, 'touch the ball')
     fitness_recorder[id_toucher]+=1
 
     # check if someone lose the ball
@@ -152,35 +152,35 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
     # touching the ball again, dribling, more point i guess
     elif(last_ball_toucher_id==id_toucher):
         fitness_recorder[id_toucher]+=3
-        print(id_toucher, 'dribble')
+        # print(id_toucher, 'dribble')
 
     
     # ok last ball beda with id toucher, and both > 6, meaning both are team B, or in other word same team
     elif(isTeamA(last_ball_toucher_id) and isTeamA(id_toucher)):
         fitness_recorder[last_ball_toucher_id]+=7
         fitness_recorder[id_toucher]+=6
-        print('A ngoper', last_ball_toucher_id, 'to', id_toucher)
+        # print('A ngoper', last_ball_toucher_id, 'to', id_toucher)
 
     
     # same but with team b
     elif(isTeamB(last_ball_toucher_id) and isTeamB(id_toucher)):
         fitness_recorder[last_ball_toucher_id]+=7
         fitness_recorder[id_toucher]+=6
-        print('B ngoper', last_ball_toucher_id, 'to', id_toucher)
+        # print('B ngoper', last_ball_toucher_id, 'to', id_toucher)
 
 
     # team b direbut tim a
     elif(isTeamB(last_ball_toucher_id) and isTeamA(id_toucher)):
         fitness_recorder[id_toucher]+=2
         fitness_recorder[last_ball_toucher_id]-=1
-        print('B lostball A', last_ball_toucher_id, 'to', id_toucher)
+        # print('B lostball A', last_ball_toucher_id, 'to', id_toucher)
 
 
     # team a direbut tema 
     elif(isTeamA(last_ball_toucher_id) and isTeamB(id_toucher)):
         fitness_recorder[id_toucher]+=2
         fitness_recorder[last_ball_toucher_id]-=1
-        print('A lostball B', last_ball_toucher_id, 'to', id_toucher)
+        # print('A lostball B', last_ball_toucher_id, 'to', id_toucher)
 
 
     # ok semua ke cek, now return
@@ -333,8 +333,46 @@ def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, h
     return input
 
 def kick_player(player):
-    player.body._set_position((0,0))
+    player.body._set_position((-10,-10))
 
+def out_of_bound_check(objs, width, height):
+    existOutOfBound=False
+    for obj in objs:
+        px, py = obj.body.position
+        # print(px, py)
+        if(px < -10 or py < -10 or px > width or py > height):
+            # endgame_fitness() keluar juga ga dikasi reward
+            existOutOfBound=True
+            print('out of bound with tolerance')
+            break
+    
+    return existOutOfBound
+
+def existMovementCheck(objs):
+    existMovement=False
+    for obj in objs:
+        vx, vy = obj.body.velocity
+        fx, fy = obj.body.force
+        if(abs(vx)+abs(vy) > 1e-7 or abs(fx)+abs(fy) > 1e-3):
+            existMovement=True
+            # print(obj.body.velocity)
+            break
+    
+    return existMovement
+
+# get fx, fy
+def process_output(output, genome, multiplier):
+    cumul_fx = output[0] - output[1] # (x positive  - (x negative) ) -> if x- > x+, then cumul fx < 0 
+    cumul_fy = output[2] - output[3] # same
+
+    cumul_fx*=multiplier
+    cumul_fy*=multiplier
+
+    # punish for doing nothing
+    if(abs(cumul_fx) < 1e-5 and abs(cumul_fy) < 1e-5):
+        genome[1].fitness -=0.1
+
+    return cumul_fx, cumul_fy
 
 ### ==== MAIN FUNCTION ==== ###
 
@@ -517,14 +555,8 @@ def game(window, width, height, genomes, config, doRandom=False):
             input = make_input(team_A, team_B, goal_a, goal_b, ball, id, width, height, min_dim, norm_div, constant)
             # output FX and FY
             output = net.activate(input)
-            
-            if(abs(output[0]) < 1e-5 and abs(output[1]) < 1e-5):
-                genome[1].fitness -=0.1
-
-            fx, fy = output[0]*3060, output[1]*3060 # di multiply karena butuh big force and kasian networknya gedein sendiri
-            fx = min(max_force, fx)
-            fy = min(max_force, fy)
-            player._apply_force((fx, fy))
+            fx, fy = process_output(output, genome, multiplier=3060)
+            player._apply_force((fx, fy)) # di cap di sini
 
         # gerakin tim b
         for id, (net, genome) in enumerate(team_B_net):
@@ -532,14 +564,8 @@ def game(window, width, height, genomes, config, doRandom=False):
             input = make_input(team_B, team_A, goal_b, goal_a, ball, id, width, height, min_dim, norm_div, constant)
             # output FX and FY
             output = net.activate(input)
-
-            if(abs(output[0]) < 1e-5 and abs(output[1]) < 1e-5):
-                genome[1].fitness -=0.1
-
-            fx, fy = output[0]*3060, output[1]*3060 # di multiply karena butuh big force and kasian networknya gedein sendiri
-            fx = min(max_force, fx)
-            fy = min(max_force, fy)
-            player._apply_force((fx, fy))
+            fx, fy = process_output(output, genome, multiplier=3060)
+            player._apply_force((fx, fy)) # di cap di sini
 
         # update world and graphics
         # for _ in range(step):
@@ -563,24 +589,8 @@ def game(window, width, height, genomes, config, doRandom=False):
         
         # cek apakah ada movement
         objs = [ball, *team_A, *team_B]
-        for obj in objs:
-            vx, vy = obj.body.velocity
-            if(abs(vx)+abs(vy) > 1e-7):
-                existMovement=True
-                # print(obj.body.velocity)
-                break
+        existMovement=existMovementCheck(objs)
         
-        # cek apakah out o bound
-        objs = [ball, team_A[0], team_B[0]]
-        for obj in objs:
-            px, py = obj.body.position
-            # print(px, py)
-            if(px < -10 or py < -10 or px > width or py > height):
-                # endgame_fitness() keluar juga ga dikasi reward
-                isRun=False
-                print('out of bound with tolerance')
-                break
-
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break
             # endgame_fitness() no move ga dikasi reward
@@ -588,6 +598,13 @@ def game(window, width, height, genomes, config, doRandom=False):
             print('no move')
         else:
             game_phase=GamePhase.Normal
+
+        # cek apakah out o bound
+        objs = [ball, team_A[0], team_B[0]]
+        isOutOfBound = out_of_bound_check(objs, width, height)
+        if(isOutOfBound):
+            isRun=False
+
 
         if (time.perf_counter()-ronde_time) > max_ronde_time:
             endgame_fitness() # kasi, sapa tau draw beneran
@@ -610,7 +627,7 @@ def game(window, width, height, genomes, config, doRandom=False):
         space.remove(obj)
     for obj in space.constraints:
         space.remove(obj)
-    print('done', total_ronde)
+    # print('done', total_ronde)
     # pygame.quit()
     return forceQuit
 
@@ -658,8 +675,17 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    # p = neat.Population(config)
 
+    # get previous population
+    print('Restoring...')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-17')
+    # p.population = checkpointer.population
+    # checkpointer.
+    p.config=config
+
+
+    # p.run(eval_genomes, 10)
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
@@ -685,8 +711,6 @@ def run(config_file):
     visualize.plot_stats(stats, ylog=False, view=True)
     visualize.plot_species(stats, view=True)
 
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-50')
-    # p.run(eval_genomes, 10)
     import pickle
     with open('winner.pkl', 'wb') as mfile:
         pickle.dump(winner, mfile)
