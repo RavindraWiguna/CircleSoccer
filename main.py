@@ -184,6 +184,11 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
 
 
     # ok semua ke cek, now return
+    if(last_ball_toucher_id==id_toucher):
+        # ga ada beda, dari pada second sama last sama
+        return True
+    
+    # ok beda orang, ganti
     second_last_toucher=last_ball_toucher_id
     last_ball_toucher_id=id_toucher
     return True
@@ -219,20 +224,24 @@ def get_ball_pos_vel(ball, min_dim, norm_vel_div):
     ball_datas.extend([x,y, vx, vy])
     return ball_datas
 
+def get_player_pos_vel(body, constant, norm_vel_div):
+    x,y = body.position
+    x = -1 + (x * constant)
+    y = -1 + (y  * constant) # yes ttp pakek max x
+
+    vx, vy = body.velocity/norm_vel_div
+    return [x,y, vx, vy]
+
 
 def get_team_pos_vel(team, skip_id, min_dim, norm_vel_div):
     team_mate_pos_vel = []
     constant = 2/min_dim
     for i, player in enumerate(team):
-        if(i==skip_id):
+        if(i == skip_id):
             continue
         
-        x,y = player.body.position
-        x = -1 + (x * constant)
-        y = -1 + (y  * constant) # yes ttp pakek max x
-
-        vx, vy = player.body.velocity/norm_vel_div
-        team_mate_pos_vel.extend([x,y, vx, vy])
+        x,y,vx,vy = get_player_pos_vel(player.body, constant, norm_vel_div)
+        team_mate_pos_vel.extend([x,y,vx,vy])
     
     return team_mate_pos_vel
     
@@ -398,8 +407,8 @@ def game(window, width, height, genomes, config, doRandom=False):
     if(doRandom):
         objs = [ball, *team_A, *team_B]
         for obj in objs:
-            rx = random.uniform(30, width-30)
-            ry = random.uniform(30, height-30)
+            rx = random.uniform(100, width-100)
+            ry = random.uniform(100, height-100)
             obj.body._set_position((rx, ry))
 
 
@@ -448,6 +457,7 @@ def game(window, width, height, genomes, config, doRandom=False):
     '''
     min_dim = min(width, height)
     norm_div = min_dim/2
+    constant = 2/min_dim
     start_time_after_goal=None
     wait_after_goal=0.0
     max_ronde_time = 15.0
@@ -472,21 +482,22 @@ def game(window, width, height, genomes, config, doRandom=False):
         
         existMovement=False
         # gerakin tim a
+
         for id, (net, genome) in enumerate(team_A_net):
             player = team_A[id]
+            self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
+            self_team_data          = get_team_pos_vel(team_A, id, min_dim, norm_div) # ga jadi di ignore
+            opponent_data           = get_team_pos_vel(team_B, -1, min_dim, norm_div)
+            ball_data               = get_ball_pos_vel(ball, min_dim, norm_div)
+            wall_data               = get_boundary_distance(player.body.position, width, height, min_dim)
+            own_goal_data           = get_jarak_goal(player.body.position, goal_a[0].body.position, min_dim)
+            own_goal_tiang_l        = get_jarak_goal(player.body.position, goal_a[1].body.position, min_dim)
+            own_goal_tiang_r        = get_jarak_goal(player.body.position, goal_a[2].body.position, min_dim)
+            opponent_goal_data      = get_jarak_goal(player.body.position, goal_b[0].body.position, min_dim)
+            opponent_goal_tiang_l   = get_jarak_goal(player.body.position, goal_b[1].body.position, min_dim)
+            opponent_goal_tiang_r   = get_jarak_goal(player.body.position, goal_b[2].body.position, min_dim)
 
-            self_team_data = get_team_pos_vel(team_A, -1, min_dim, norm_div) # ga jadi di ignore
-            opponent_data = get_team_pos_vel(team_B, -1, min_dim, norm_div)
-            ball_data = get_ball_pos_vel(ball, min_dim, norm_div)
-            wall_data = get_boundary_distance(player.body.position, width, height, min_dim)
-            own_goal_data = get_jarak_goal(player.body.position, goal_a[0].body.position, min_dim)
-            own_goal_tiang_l = get_jarak_goal(player.body.position, goal_a[1].body.position, min_dim)
-            own_goal_tiang_r = get_jarak_goal(player.body.position, goal_a[2].body.position, min_dim)
-            opponent_goal_data = get_jarak_goal(player.body.position, goal_b[0].body.position, min_dim)
-            opponent_goal_tiang_l = get_jarak_goal(player.body.position, goal_b[1].body.position, min_dim)
-            opponent_goal_tiang_r = get_jarak_goal(player.body.position, goal_b[2].body.position, min_dim)
-
-            input = [*self_team_data, *opponent_data, *ball_data, 
+            input = [*self_pos_vel, *self_team_data, *opponent_data, *ball_data, 
                      *wall_data, *own_goal_data, *own_goal_tiang_r, 
                      *own_goal_tiang_l, *opponent_goal_data, *opponent_goal_tiang_l,
                      *opponent_goal_tiang_r]
@@ -505,19 +516,19 @@ def game(window, width, height, genomes, config, doRandom=False):
         # gerakin tim b
         for id, (net, genome) in enumerate(team_B_net):
             player = team_B[id]
+            self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
+            self_team_data          = get_team_pos_vel(team_B, id, min_dim, norm_div)
+            opponent_data           = get_team_pos_vel(team_A, -1, min_dim, norm_div)
+            ball_data               = get_ball_pos_vel(ball, min_dim, norm_div)
+            wall_data               = get_boundary_distance(player.body.position, width, height, min_dim)
+            own_goal_data           = get_jarak_goal(player.body.position, goal_b[0].body.position, min_dim)
+            own_goal_tiang_l        = get_jarak_goal(player.body.position, goal_b[1].body.position, min_dim)
+            own_goal_tiang_r        = get_jarak_goal(player.body.position, goal_b[2].body.position, min_dim)
+            opponent_goal_data      = get_jarak_goal(player.body.position, goal_a[0].body.position, min_dim)
+            opponent_goal_tiang_l   = get_jarak_goal(player.body.position, goal_a[1].body.position, min_dim)
+            opponent_goal_tiang_r   = get_jarak_goal(player.body.position, goal_a[2].body.position, min_dim)
 
-            self_team_data = get_team_pos_vel(team_B, -1, min_dim, norm_div)
-            opponent_data = get_team_pos_vel(team_B, -1, min_dim, norm_div)
-            ball_data = get_ball_pos_vel(ball, min_dim, norm_div)
-            wall_data = get_boundary_distance(player.body.position, width, height, min_dim)
-            own_goal_data = get_jarak_goal(player.body.position, goal_b[0].body.position, min_dim)
-            own_goal_tiang_l = get_jarak_goal(player.body.position, goal_b[1].body.position, min_dim)
-            own_goal_tiang_r = get_jarak_goal(player.body.position, goal_b[2].body.position, min_dim)
-            opponent_goal_data = get_jarak_goal(player.body.position, goal_a[0].body.position, min_dim)
-            opponent_goal_tiang_l = get_jarak_goal(player.body.position, goal_a[1].body.position, min_dim)
-            opponent_goal_tiang_r = get_jarak_goal(player.body.position, goal_a[2].body.position, min_dim)
-
-            input = [*self_team_data, *opponent_data, *ball_data, 
+            input = [*self_pos_vel, *self_team_data, *opponent_data, *ball_data, 
                      *wall_data, *own_goal_data, *own_goal_tiang_r, 
                      *own_goal_tiang_l, *opponent_goal_data, *opponent_goal_tiang_l,
                      *opponent_goal_tiang_r]
