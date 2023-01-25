@@ -400,11 +400,11 @@ def process_output(output, genome, multiplier):
 def calculate_ball_fitness(player, ball):
     final_distance_ball = calculate_distance(player.body.position, ball.body.position)
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
-    # fitness = 1 - final_distance_ball/max_fitness
-    # fitness *=1000
-    fitness = max_fitness - final_distance_ball
+    fitness = 1 - final_distance_ball/max_fitness
+    fitness *=17
+    # fitness = max_fitness - final_distance_ball
     # print(max_fitness, final_distance_ball
-    fitness /= 6 # (karena main 6 ronde)
+    # fitness /= 1000 # (karena main 6 ronde) # ku kecilin lgi
     return fitness
 
 ### ==== MAIN FUNCTION ==== ###
