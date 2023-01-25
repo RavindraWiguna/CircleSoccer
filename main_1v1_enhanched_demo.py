@@ -655,6 +655,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
     genomes[0][1].fitness += fitness_goalz
 
 
+    print(genomes[0][1].fitness)
+
     # remove object from space? or just remove space
     for obj in space.bodies:
         space.remove(obj)
@@ -757,8 +759,11 @@ def run(config_file):
     # game(window, WIDTH, HEIGHT, players, config, False)
     # p.run(eval_genomes, 10)
     winner = pickle.load(open('winner.pkl', 'rb'))
+    asA=True
     while True:
-        game(window, WIDTH, HEIGHT, [[1,winner]], config, True, True)
+        asA=not asA
+        winner.fitness=0.0
+        game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
 
 
 if __name__ == '__main__':
