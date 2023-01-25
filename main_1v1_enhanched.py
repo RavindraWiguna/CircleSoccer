@@ -90,22 +90,22 @@ def goal_a_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
     if(game_phase==GamePhase.Normal):
         score_data['B']+=1
-        fitness_recorder['B']+=12
-        fitness_recorder['A']-=20
+        fitness_recorder['B']+=120
+        fitness_recorder['A']-=200
         # print('A -20| B + 12')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamB(last_ball_toucher_id)):
             # eyo dia ngegolin
-            fitness_recorder[last_ball_toucher_id]+=30.0
+            fitness_recorder[last_ball_toucher_id]+=300.0
             # print(last_ball_toucher_id, 'score the goal for tim B dia')
             if(isTeamB(second_last_toucher)):
                 # hoo ngassist
-                fitness_recorder[second_last_toucher]+=15.0
+                fitness_recorder[second_last_toucher]+=150.0
                 # print(second_last_toucher, 'is the assist for tim B dia')
         else:
             # bruh tim A ngegol ke A? bunuh diri
-            fitness_recorder[last_ball_toucher_id]-=50.0
+            fitness_recorder[last_ball_toucher_id]-=500.0
             # print('A dummy dumb dumb', last_ball_toucher_id, 'just make own goal for tim B')
 
     return True
@@ -114,23 +114,23 @@ def goal_b_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
     if(game_phase==GamePhase.Normal):
         score_data['A']+=1
-        fitness_recorder['A']+=12
-        fitness_recorder['B']-=20
+        fitness_recorder['A']+=120
+        fitness_recorder['B']-=200
         # print('A + 12| B -20 ')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamB(last_ball_toucher_id)):
             # eyo dia bunuh diri b skor ke b
-            fitness_recorder[last_ball_toucher_id]-=50.0
+            fitness_recorder[last_ball_toucher_id]-=500.0
             # print('tim B owngoal,', last_ball_toucher_id)
             
         else:
             # bruh tim A ngegol ke B? mantap
-            fitness_recorder[last_ball_toucher_id]+=30.0
+            fitness_recorder[last_ball_toucher_id]+=300.0
             # print('messii of tim A', last_ball_toucher_id)
             if(isTeamA(second_last_toucher)):
                 # hoo ngassist
-                fitness_recorder[second_last_toucher]+=15.0
+                fitness_recorder[second_last_toucher]+=150.0
                 # print('assit ma men A', second_last_toucher)
 
     return True
@@ -142,7 +142,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
         fitness_recorder[id_toucher]=0
     
     # print(id_toucher, 'touch the ball')
-    fitness_recorder[id_toucher]+=1
+    fitness_recorder[id_toucher]+=10
 
     # check if someone lose the ball
     if(last_ball_toucher_id==0):
@@ -151,35 +151,35 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
 
     # touching the ball again, dribling, more point i guess
     elif(last_ball_toucher_id==id_toucher):
-        fitness_recorder[id_toucher]+=3
+        fitness_recorder[id_toucher]+=30
         # print(id_toucher, 'dribble')
 
     
     # ok last ball beda with id toucher, and both > 6, meaning both are team B, or in other word same team
     elif(isTeamA(last_ball_toucher_id) and isTeamA(id_toucher)):
-        fitness_recorder[last_ball_toucher_id]+=7
-        fitness_recorder[id_toucher]+=6
+        fitness_recorder[last_ball_toucher_id]+=70
+        fitness_recorder[id_toucher]+=60
         # print('A ngoper', last_ball_toucher_id, 'to', id_toucher)
 
     
     # same but with team b
     elif(isTeamB(last_ball_toucher_id) and isTeamB(id_toucher)):
-        fitness_recorder[last_ball_toucher_id]+=7
-        fitness_recorder[id_toucher]+=6
+        fitness_recorder[last_ball_toucher_id]+=70
+        fitness_recorder[id_toucher]+=60
         # print('B ngoper', last_ball_toucher_id, 'to', id_toucher)
 
 
     # team b direbut tim a
     elif(isTeamB(last_ball_toucher_id) and isTeamA(id_toucher)):
-        fitness_recorder[id_toucher]+=2
-        fitness_recorder[last_ball_toucher_id]-=1
+        fitness_recorder[id_toucher]+=20
+        fitness_recorder[last_ball_toucher_id]-=10
         # print('B lostball A', last_ball_toucher_id, 'to', id_toucher)
 
 
     # team a direbut tema 
     elif(isTeamA(last_ball_toucher_id) and isTeamB(id_toucher)):
-        fitness_recorder[id_toucher]+=2
-        fitness_recorder[last_ball_toucher_id]-=1
+        fitness_recorder[id_toucher]+=20
+        fitness_recorder[last_ball_toucher_id]-=10
         # print('A lostball B', last_ball_toucher_id, 'to', id_toucher)
 
 
@@ -278,17 +278,17 @@ def initialize_fitness(genome):
 def endgame_fitness():
     global fitness_recorder, score_data
     if(score_data['A']>score_data['B']):
-        fitness_recorder['A']+=100
-        fitness_recorder['B']-=100
+        fitness_recorder['A']+=1000
+        fitness_recorder['B']-=1000
         # print('A win')
     elif(score_data['A']<score_data['B']):
-        fitness_recorder['A']-=100
-        fitness_recorder['B']+=100
+        fitness_recorder['A']-=1000
+        fitness_recorder['B']+=1000
         # print('B win')
     else:
         # draw
-        fitness_recorder['A']+=25
-        fitness_recorder['B']+=25
+        fitness_recorder['A']+=250
+        fitness_recorder['B']+=250
         # print('Got Draw')
 
 def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, type_game):
@@ -406,6 +406,14 @@ def calculate_ball_fitness(player, ball):
     # print(max_fitness, final_distance_ball
     # fitness /= 1000 # (karena main 6 ronde) # ku kecilin lgi
     return fitness
+
+def calculate_ball_goal_fitness(opo_goal, ball):
+    final_distance_goal = calculate_distance(opo_goal.body.position, ball.body.position)
+    max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
+    fitness = 1 - final_distance_goal/max_fitness
+    fitness *=17
+    return fitness
+
 
 ### ==== MAIN FUNCTION ==== ###
 
@@ -639,14 +647,21 @@ def game(window, width, height, genomes, config, doRandom, asA):
     if(asA):
         genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
         player = team_A[0]
+        opo_goal = goal_b[0]
     else:
         player = team_B[0]
+        opo_goal = goal_a[0]
         genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
 
     # BALLZ
     fitness_ballz = calculate_ball_fitness(player, ball)
     genomes[0][1].fitness +=fitness_ballz
     # print('ballfit', fitness_ballz)
+
+    # GOALZ
+    fitness_goalz = calculate_ball_goal_fitness(opo_goal, ball)
+    genomes[0][1].fitness += fitness_goalz
+
 
     # remove object from space? or just remove space
     for obj in space.bodies:
