@@ -19,6 +19,9 @@ from neatUtils import visualize
 pygame.init()
 MULT = 8
 WIDTH, HEIGHT = 160*MULT, 95*MULT
+min_dim = min(WIDTH, HEIGHT)
+norm_div = min_dim/2
+constant = 2/min_dim
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 bg = pygame.image.load('assets/images/bg.png')
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
@@ -536,9 +539,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             MAIN LOOP
     ========================
     '''
-    min_dim = min(width, height)
-    norm_div = min_dim/2
-    constant = 2/min_dim
     start_time_after_goal=None
     wait_after_goal=0.0
     max_ronde_time = 5.0
