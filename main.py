@@ -475,7 +475,7 @@ def game(window, width, height, genomes, config, doRandom=False):
         for id, (net, genome) in enumerate(team_A_net):
             player = team_A[id]
 
-            self_team_data = get_team_pos_vel(team_A, id, min_dim, norm_div)
+            self_team_data = get_team_pos_vel(team_A, -1, min_dim, norm_div) # ga jadi di ignore
             opponent_data = get_team_pos_vel(team_B, -1, min_dim, norm_div)
             ball_data = get_ball_pos_vel(ball, min_dim, norm_div)
             wall_data = get_boundary_distance(player.body.position, width, height, min_dim)
