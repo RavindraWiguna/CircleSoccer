@@ -291,18 +291,32 @@ def endgame_fitness():
         fitness_recorder['B']+=25
         print('Got Draw')
 
-def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant):
+def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1=True):
     player = self_team[id_self]
     # self team posv
     self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
-    self_team_data          = get_team_pos_vel(self_team, id_self, min_dim, norm_div)
+    
+    if(not is1v1):
+        self_team_data      = get_team_pos_vel(self_team, id_self, min_dim, norm_div)
+    else:
+        self_team_data      = [0.0, 0.0, 0.0, 0.0]*2 # pos x pos y, vx, vy
+        # print('a')
+
     # oponent posv
-    opponent_data           = get_team_pos_vel(opo_team, -1, min_dim, norm_div)
+    if(not is1v1):
+        opponent_data       = get_team_pos_vel(opo_team, -1, min_dim, norm_div)
+    else:
+        opponent_data       = get_player_pos_vel(opo_team[0].body, constant, norm_div)
+        opponent_data.extend([0.0, 0.0, 0.0, 0.0]*2)
+        # print('a')
+
     # ball posv dis
     ball_data               = get_ball_pos_vel(ball, min_dim, norm_div)
     ball_distance           = get_position_distance(player.body.position, ball.body.position, constant)
+    
     # wall dis
     wall_data               = get_boundary_distance(player.body.position, width, height, min_dim)
+    
     # goals dis
     own_goal_data           = get_position_distance(player.body.position, self_goal[0].body.position, constant)
     own_goal_tiang_l        = get_position_distance(player.body.position, self_goal[1].body.position, constant)
@@ -532,7 +546,7 @@ def game(window, width, height, genomes, config, doRandom=False):
         space.step(dt)
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
-        clock.tick(fps)
+        # clock.tick(fps)
 
         if(game_phase==GamePhase.JUST_GOAL):
 
