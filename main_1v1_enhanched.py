@@ -291,7 +291,7 @@ def endgame_fitness():
         fitness_recorder['B']+=25
         # print('Got Draw')
 
-def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1):
+def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, is1v1):
     player = self_team[id_self]
     # self team posv
     self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
@@ -325,12 +325,13 @@ def make_input(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, h
     opponent_goal_tiang_l   = get_position_distance(player.body.position, opo_goal[1].body.position, constant)
     opponent_goal_tiang_r   = get_position_distance(player.body.position, opo_goal[2].body.position, constant)
 
-    input = [*self_pos_vel, *self_team_data, *opponent_data, *ball_data, *ball_distance,
+    the_input = [*self_pos_vel, *self_team_data, *opponent_data, *ball_data, *ball_distance,
             *wall_data, *own_goal_data, *own_goal_tiang_r, 
             *own_goal_tiang_l, *opponent_goal_data, *opponent_goal_tiang_l,
             *opponent_goal_tiang_r]
     
-    return input
+    # print(the_input)
+    return the_input
 
 def kick_player(player):
     player.body._set_position((-10,-10))
@@ -384,7 +385,7 @@ def process_output(output, genome, multiplier):
 
 ### ==== MAIN FUNCTION ==== ###
 
-def game(window, width, height, genomes, config, doRandom=False, asA=True):
+def game(window, width, height, genomes, config, doRandom, asA):
     global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder
     '''
     =============================
@@ -511,7 +512,7 @@ def game(window, width, height, genomes, config, doRandom=False, asA=True):
     constant = 2/min_dim
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 7.0
+    max_ronde_time = 5.0
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -540,18 +541,18 @@ def game(window, width, height, genomes, config, doRandom=False, asA=True):
         # gerakin player
         if(asA):
             player = team_A[0]
-            net = team_net[0]
-            input = make_input(team_A, team_B, goal_a, goal_b, ball, 0, width, height, min_dim, norm_div, constant, True)
+            net, genome = team_net[0]
+            the_input = make_data_masuk(team_A, team_B, goal_a, goal_b, ball, 0, width, height, min_dim, norm_div, constant, True)
             # output FX and FY
-            output = net.activate(input)
+            output = net.activate(the_input)
             fx, fy = process_output(output, genome, multiplier=3060)
             player._apply_force((fx, fy)) # di cap di sini
         else:
-            player = team_B[id]
-            net = team_net[0]
-            input = make_input(team_B, team_A, goal_b, goal_a, ball, 0, width, height, min_dim, norm_div, constant)
+            player = team_B[0]
+            net, genome = team_net[0]
+            the_input = make_data_masuk(team_B, team_A, goal_b, goal_a, ball, 0, width, height, min_dim, norm_div, constant, True)
             # output FX and FY
-            output = net.activate(input)
+            output = net.activate(the_input)
             fx, fy = process_output(output, genome, multiplier=3060)
             player._apply_force((fx, fy)) # di cap di sini
 
@@ -589,7 +590,12 @@ def game(window, width, height, genomes, config, doRandom=False, asA=True):
             game_phase=GamePhase.Normal
 
         # cek apakah out o bound
-        objs = [ball, team_A[0], team_B[0]]
+        objs = [ball]
+        if(asA):
+            objs.append(team_A[0])
+        else:
+            objs.append(team_B[0])
+        
         isOutOfBound = out_of_bound_check(objs, width, height)
         if(isOutOfBound):
             isRun=False
@@ -601,19 +607,11 @@ def game(window, width, height, genomes, config, doRandom=False, asA=True):
             print('time out')
             break
 
-
-    
     # calculate sisa fitness tim A & B + individu
-    genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
-    # genomes[1][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P2.value, 0.0)
-    # genomes[2][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P3.value, 0.0)
-    
-    genomes[1][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
-    # genomes[4][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P2.value, 0.0)
-    # genomes[5][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P3.value, 0.0)
-    
-    # print('genome:', genomes[0][0], 'f:', genomes[0][1].fitness)
-    # print('genome:', genomes[1][0], 'f:', genomes[1][1].fitness)
+    if(asA):
+        genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
+    else:
+        genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -636,12 +634,6 @@ def create_team(genomes, id):
     else:
         print('nanggung..., skip aja males mikir')
         return None, len(genomes)
-    # else:
-    #     curTim = genomes[id:len(genomes)]
-    #     kurang = 3-len(curTim)
-    #     sisa = genomes[0:sisa]
-    #     curTim.extend(sisa)
-    #     return curTim, len(genomes)
 
 def make_teams(genomes):
     teams = []
@@ -655,22 +647,12 @@ def make_teams(genomes):
 
 def eval_genomes(genomes, config):
     set_fitness_val(genomes)
-    doit = True
-    total_main_random=4
-    for id1 in range(len(genomes)):
-        if(not doit):
-            break
-        for id2 in range(id1+1, len(genomes)):
-            players = [genomes[id1], genomes[id2]]
-            # main game 4 kali
-            for _ in range(total_main_random-1):
-                game(window, WIDTH, HEIGHT, players, config, True)
-            
-            # terakhir ada fq
-            fq = game(window, WIDTH, HEIGHT, players, config, True)
-            if(fq):
-                doit=False
-                break
+    total_repeat = 3
+    for id_genome in range(len(genomes)):
+        for _ in range(total_repeat):
+            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
+            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
+            if(fq):break
 
 
 
@@ -707,7 +689,7 @@ def run(config_file):
     # # Show output of the most fit genome against training data.
     # print('\nOutput:')
     # winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-    # for xi, xo in zip(xor_inputs, xor_outputs):
+    # for xi, xo in zip(xor_the_inputs, xor_outputs):
     #     output = winner_net.activate(xi)
     #     print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
