@@ -2,7 +2,7 @@ from enum import Enum
 
 class CollisionType(Enum):
     # Made this way for easier logic
-    BALL = 0
+    BALL = 128
     GOAL_A = 1
     GOAL_B = 2
     A_P1=3

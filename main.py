@@ -91,18 +91,21 @@ def goal_a_handler(arbiter, space, data):
         score_data['B']+=1
         fitness_recorder['B']+=12
         fitness_recorder['A']-=20
+        print('B score| A got -20| B got 12')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamA(last_ball_toucher_id)):
             # eyo dia ngegolin
             fitness_recorder[last_ball_toucher_id]+=30.0
-            
+            print(last_ball_toucher_id, 'score the goal for tim dia')
             if(isTeamA(second_last_toucher)):
                 # hoo ngassist
                 fitness_recorder[second_last_toucher]+=15.0
+                print(second_last_toucher, 'is the assist for tim dia')
         else:
             # bruh tim B ngegol ke B? bunuh diri
             fitness_recorder[last_ball_toucher_id]-=50.0
+            print('dummy dumb dumb', last_ball_toucher_id, 'just make own goal from tim B')
 
     return True
 
@@ -112,18 +115,22 @@ def goal_b_handler(arbiter, space, data):
         score_data['A']+=1
         fitness_recorder['A']+=12
         fitness_recorder['B']-=20
+        print('A score| A got 12| B got -20 ')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamA(last_ball_toucher_id)):
             # eyo dia bunuh diri
             fitness_recorder[last_ball_toucher_id]-=50.0
+            print('bruh tim A owngoal, dumb', last_ball_toucher_id)
             
         else:
             # bruh tim B ngegol ke A? mantap
             fitness_recorder[last_ball_toucher_id]+=30.0
+            print('this is messii from tim B', last_ball_toucher_id)
             if(isTeamB(second_last_toucher)):
                 # hoo ngassist
                 fitness_recorder[second_last_toucher]+=15.0
+                print('assit ma men B', second_last_toucher)
 
     return True
 
@@ -133,6 +140,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
     if(not fitness_recorder.__contains__(id_toucher)):
         fitness_recorder[id_toucher]=0
     
+    print(id_toucher, 'touch the ball')
     fitness_recorder[id_toucher]+=1
 
     # check if someone lose the ball
@@ -143,30 +151,35 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
     # touching the ball again, dribling, more point i guess
     elif(last_ball_toucher_id==id_toucher):
         fitness_recorder[id_toucher]+=3
+        print(id_toucher, 'dribble')
 
     
     # ok last ball beda with id toucher, and both > 6, meaning both are team B, or in other word same team
     elif(isTeamA(last_ball_toucher_id) and isTeamA(id_toucher)):
         fitness_recorder[last_ball_toucher_id]+=7
         fitness_recorder[id_toucher]+=6
+        print('A ngoper', last_ball_toucher_id, 'to', id_toucher)
 
     
     # same but with team b
     elif(isTeamB(last_ball_toucher_id) and isTeamB(id_toucher)):
         fitness_recorder[last_ball_toucher_id]+=7
         fitness_recorder[id_toucher]+=6
+        print('B ngoper', last_ball_toucher_id, 'to', id_toucher)
 
 
     # team b direbut tim a
     elif(isTeamB(last_ball_toucher_id) and isTeamA(id_toucher)):
         fitness_recorder[id_toucher]+=2
         fitness_recorder[last_ball_toucher_id]-=1
+        print('B lostball A', last_ball_toucher_id, 'to', id_toucher)
 
 
     # team a direbut tema 
     elif(isTeamA(last_ball_toucher_id) and isTeamB(id_toucher)):
         fitness_recorder[id_toucher]+=2
         fitness_recorder[last_ball_toucher_id]-=1
+        print('A lostball B', last_ball_toucher_id, 'to', id_toucher)
 
 
     # ok semua ke cek, now return
@@ -258,13 +271,16 @@ def endgame_fitness():
     if(score_data['A']>score_data['B']):
         fitness_recorder['A']+=100
         fitness_recorder['B']-=100
+        print('A win')
     elif(score_data['A']<score_data['B']):
         fitness_recorder['A']-=100
         fitness_recorder['B']+=100
+        print('B win')
     else:
         # draw
         fitness_recorder['A']+=25
         fitness_recorder['B']+=25
+        print('Got Draw')
 
 ### ==== MAIN FUNCTION ==== ###
 
@@ -386,17 +402,30 @@ def game(window, width, height, genomes, config):
     '''
     # print(genomes[0])
     # ternyata genomes[id] -> genome1d, genome
+    # team_A_net = [
+    #     (neat.nn.FeedForwardNetwork.create(genomes[0][1], config), genomes[0]),
+    #     (neat.nn.FeedForwardNetwork.create(genomes[1][1], config), genomes[1]),
+    #     (neat.nn.FeedForwardNetwork.create(genomes[2][1], config), genomes[2]),
+    # ]
+
+    # team_B_net = [
+    #     (neat.nn.FeedForwardNetwork.create(genomes[3][1], config), genomes[3]),
+    #     (neat.nn.FeedForwardNetwork.create(genomes[4][1], config), genomes[4]),
+    #     (neat.nn.FeedForwardNetwork.create(genomes[5][1], config), genomes[5]),
+    # ]
+
     team_A_net = [
-        (neat.nn.FeedForwardNetwork.create(genomes[0][1], config), genomes[0]),
-        (neat.nn.FeedForwardNetwork.create(genomes[1][1], config), genomes[1]),
-        (neat.nn.FeedForwardNetwork.create(genomes[2][1], config), genomes[2]),
+        (neat.nn.RecurrentNetwork.create(genomes[0][1], config), genomes[0]),
+        (neat.nn.RecurrentNetwork.create(genomes[1][1], config), genomes[1]),
+        (neat.nn.RecurrentNetwork.create(genomes[2][1], config), genomes[2]),
     ]
 
     team_B_net = [
-        (neat.nn.FeedForwardNetwork.create(genomes[3][1], config), genomes[3]),
-        (neat.nn.FeedForwardNetwork.create(genomes[4][1], config), genomes[4]),
-        (neat.nn.FeedForwardNetwork.create(genomes[5][1], config), genomes[5]),
+        (neat.nn.RecurrentNetwork.create(genomes[3][1], config), genomes[3]),
+        (neat.nn.RecurrentNetwork.create(genomes[4][1], config), genomes[4]),
+        (neat.nn.RecurrentNetwork.create(genomes[5][1], config), genomes[5]),
     ]
+
 
     # initlaize fitness
     for genomeid, genome in genomes:
@@ -649,8 +678,13 @@ def run(config_file):
     visualize.plot_stats(stats, ylog=False, view=True)
     visualize.plot_species(stats, view=True)
 
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-50')
     # p.run(eval_genomes, 10)
+    import pickle
+    with open('winner.pkl', 'wb') as mfile:
+        pickle.dump(winner, mfile)
+        mfile.close()
+        print('FINISHED')
 
 
 
@@ -660,5 +694,5 @@ if __name__ == '__main__':
     # here so that the script will run successfully regardless of the
     # current working directory.
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, './neatUtils/config-feedforward')
+    config_path = os.path.join(local_dir, './neatUtils/config-neat')
     run(config_path)
