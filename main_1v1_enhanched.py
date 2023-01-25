@@ -714,18 +714,21 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-106')
-    p.config=config
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-106')
+    # p.config=config
     # p.population = checkpointer.population
     # checkpointer.
+    import pickle
+    p = pickle.load(open('pop.pkl', 'rb'))
+    p.config=config
 
 
     # p.run(eval_genomes, 10)
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(30))
+    # p.add_reporter(neat.StdOutReporter(True))
+    # stats = neat.StatisticsReporter()
+    # p.add_reporter(stats)
+    # p.add_reporter(neat.Checkpointer(30))
 
     # Run for up to 300 generations.
     winner = p.run(eval_genomes, 1000)
@@ -746,7 +749,6 @@ def run(config_file):
     # visualize.plot_stats(stats, ylog=False, view=True)
     # visualize.plot_species(stats, view=True)
 
-    import pickle
     with open('winner.pkl', 'wb') as mfile:
         pickle.dump(winner, mfile)
         mfile.close()
