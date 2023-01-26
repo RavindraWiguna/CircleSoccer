@@ -734,6 +734,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     net, genome = team_net[0]
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
 
+    # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
+    prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
+
     forceQuit=False
     ronde_time = time.perf_counter()
     while isRun:
@@ -770,6 +773,12 @@ def game(window, width, height, genomes, config, doRandom, asA):
             draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
             pygame.display.update()
             # clock.tick(fps)
+
+        # update fitness
+        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
+        if(cur_distance_ball < prev_distance_ball):
+            genome[0][1]+=1
+            prev_distance_ball=cur_distance_ball
 
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -896,7 +905,7 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpointVel')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint70vel')
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
