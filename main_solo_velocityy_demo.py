@@ -33,6 +33,13 @@ game_phase = GamePhase.Normal
 second_last_toucher=0
 last_ball_toucher_id=0
 fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
+solo_touch_ball_counter = 0
+solo_dribble_ball_counter= 0
+solo_iter_to_touch = 1
+
+multiplier_fitness_iter_touch = 500
+max_touch = 4
+max_drible = 3
 
 ### === PYMUNK SETUP === ###
 # make space where we will simulate
@@ -144,13 +151,20 @@ def goal_b_handler(arbiter, space, data):
     return True
 
 def ball_touch_handler(id_toucher, arbiter, space, data):
-    global fitness_recorder, last_ball_toucher_id, second_last_toucher
+    global fitness_recorder, last_ball_toucher_id, second_last_toucher, solo_touch_ball_counter, solo_dribble_ball_counter, solo_iter_to_touch
     
     if(not fitness_recorder.__contains__(id_toucher)):
         fitness_recorder[id_toucher]=0
     
     # print(id_toucher, 'touch the ball')
-    fitness_recorder[id_toucher]+=100
+    # fitness_recorder[id_toucher]
+    solo_touch_ball_counter+=1
+    solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
+    if(solo_touch_ball_counter < max_touch):
+        fitness_iter_touch = (1/solo_iter_to_touch)*multiplier_fitness_iter_touch
+        fitness_recorder[id_toucher] += fitness_iter_touch
+        # print('got fit', fitness_iter_touch, 'from', solo_iter_to_touch)
+        solo_iter_to_touch=1
 
     # check if someone lose the ball
     if(last_ball_toucher_id==0):
@@ -159,7 +173,9 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
 
     # touching the ball again, dribling, more point i guess
     elif(last_ball_toucher_id==id_toucher):
-        fitness_recorder[id_toucher]+=300
+        # fitness_recorder[id_toucher]+=300
+        solo_dribble_ball_counter+=1
+        solo_dribble_ball_counter = min(max_drible, solo_dribble_ball_counter)
         # print(id_toucher, 'dribble')
 
     
@@ -588,7 +604,7 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, solo_dribble_ball_counter, solo_touch_ball_counter, solo_iter_to_touch
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -711,18 +727,24 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 15.0
+    max_ronde_time = 50.0
 
     # reset global var
     score_data = {'A':0,'B':0}
     game_phase = GamePhase.Normal
     second_last_toucher=0
     last_ball_toucher_id=0
-    fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
+    fitness_recorder = {'A':0, 'B':0, 'mendekat':0} # team fitness and individu fitness too
+    solo_touch_ball_counter=0
+    solo_dribble_ball_counter=0
+    solo_iter_to_touch=1
 
     # get player, self goal, opo goal, team, etc
     net, genome = team_net[0]
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
+
+    # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
+    prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
 
     forceQuit=False
     ronde_time = time.perf_counter()
@@ -755,6 +777,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
         pygame.display.update()
         clock.tick(fps)
 
+        # update fitness
+        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
+        if(cur_distance_ball < prev_distance_ball and abs(cur_distance_ball-prev_distance_ball) > 50):
+            # genomes[0][1].fitness+=0.1
+            fitness_recorder['mendekat']+=0.1
+            # fitness_recorder['mendekat'] = min(fitness_recorder['mendekat'], 500)
+            # print('ngedeketin bola', cur_distance_ball, prev_distance_ball)
+            prev_distance_ball=cur_distance_ball
+
+        # check termination
         if(game_phase==GamePhase.JUST_GOAL):
 
             if(start_time_after_goal is None):
@@ -768,7 +800,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 print('get to 1 goal stop')
                 break
         
-        
+        # same, check termination
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break
             # endgame_fitness() no move ga dikasi reward
@@ -800,6 +832,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_recorder['B'] -= 5000
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
+        
+        solo_iter_to_touch+=1
+    ### === END OF WHILE LOOP === ###
 
     # calculate sisa fitness tim A & B + individu
     
@@ -816,6 +851,13 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # GOALZ
     fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)
     genomes[0][1].fitness += fitness_goalz
+
+    # TOUCH N DRIBLEZ
+    fitness_td = (solo_dribble_ball_counter+solo_touch_ball_counter)*100
+    genomes[0][1].fitness += fitness_td
+
+    # mendekat
+    genomes[0][1].fitness += min(fitness_recorder['mendekat'], 500)
 
     print(genomes[0][1].fitness)
 
@@ -882,6 +924,7 @@ def run(config_file):
         winner.fitness=0.0
         game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
         # break
+
 
 
 if __name__ == '__main__':
