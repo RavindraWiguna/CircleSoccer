@@ -365,10 +365,11 @@ def out_of_bound_check(objs, width, height):
 
 def existMovementCheck(objs):
     existMovement=False
+    force_threshold = 2755
     for obj in objs:
         vx, vy = obj.body.velocity
         fx, fy = obj.body.force
-        if(abs(vx)+abs(vy) > 1e-7 or abs(fx)+abs(fy) > 1e-3):
+        if(abs(vx)+abs(vy) > 1e-7 or (abs(fx)>force_threshold) or (abs(fy) > force_threshold)):
             existMovement=True
             # print(obj.body.velocity)
             break
@@ -585,6 +586,10 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fx, fy = process_output(output, genome, multiplier=3060)
             player._apply_force((fx, fy)) # di cap di sini
 
+        # cek apakah ada movement (sebelum step, karena step ngereset force)
+        objs = [ball, *team_A, *team_B]
+        existMovement=existMovementCheck(objs)
+
         # update world and graphics
         # for _ in range(step):
         space.step(dt)
@@ -606,9 +611,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 print('get to 1 goal stop')
                 break
         
-        # cek apakah ada movement
-        objs = [ball, *team_A, *team_B]
-        existMovement=existMovementCheck(objs)
         
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break

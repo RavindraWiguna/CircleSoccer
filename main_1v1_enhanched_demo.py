@@ -368,7 +368,8 @@ def existMovementCheck(objs):
     for obj in objs:
         vx, vy = obj.body.velocity
         fx, fy = obj.body.force
-        if(abs(vx)+abs(vy) > 1e-7 or abs(fx)+abs(fy) > 1e-3):
+        # print(fx, fy)
+        if(abs(vx)+abs(vy) > 1e-7 or (abs(fx)>2755) or (abs(fy) > 2755)):
             existMovement=True
             # print(obj.body.velocity)
             break
@@ -393,7 +394,9 @@ def process_output(output, genome, multiplier):
     # punish for doing nothing
     if(abs(cumul_fx) < 1e-5 and abs(cumul_fy) < 1e-5):
         genome[1].fitness -=0.1
+        # print('choose diem')
 
+    print(cumul_fx, cumul_fy)
     return cumul_fx, cumul_fy
 
 # FITNESS BALLZ
@@ -579,12 +582,17 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fx, fy = process_output(output, genome, multiplier=3060)
             player._apply_force((fx, fy)) # di cap di sini
 
-        # update world and graphics
         # for _ in range(step):
+        
+        # cek apakah ada movement
+        objs = [ball, *team_A, *team_B]
+        existMovement=existMovementCheck(objs)
+
+        # update world and graphics
         space.step(dt)
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
-        clock.tick(fps)
+        # clock.tick(fps)
 
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -599,9 +607,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 print('get to 1 goal stop')
                 break
         
-        # cek apakah ada movement
-        objs = [ball, *team_A, *team_B]
-        existMovement=existMovementCheck(objs)
         
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break
@@ -610,7 +615,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish!!!!!!!!!!
             fitness_recorder['A']-=5000
             fitness_recorder['B']-=5000
-            # print('no move')
+            print('no move')
         else:
             game_phase=GamePhase.Normal
 
@@ -655,6 +660,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     fitness_goalz = calculate_ball_goal_fitness(opo_goal, ball)
     genomes[0][1].fitness += fitness_goalz
 
+    print( genomes[0][1].fitness )
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -712,7 +718,7 @@ def run(config_file):
         asA=not asA
         winner.fitness=0.0
         game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
-
+        # break
 
 if __name__ == '__main__':
     # run(window, WIDTH, HEIGHT)
