@@ -228,6 +228,22 @@ def reset_score():
 def kick_player(player):
     player.body._set_position((-10,-10))
 
+def get_player_team_goal(team_A, team_B, goal_a, goal_b, asA):
+    if(asA):
+        player = team_A[0]
+        self_team=team_A
+        opo_team=team_B
+        self_goal=goal_a
+        opo_goal=goal_b
+    else:
+        player = team_B[0]
+        self_team=team_B
+        opo_team=team_A
+        self_goal=goal_b
+        opo_goal=goal_a
+    
+    return player, self_team, opo_team, self_goal, opo_goal
+
 '''
 =======================
   GAME TERMINATION UTL
@@ -249,6 +265,9 @@ def out_of_bound_check(objs, width, height):
 # kalau tembok atas 1, bawah = 2, kiri = 4, kanan = 8, gak kena = 0 (semua bit mati) 
 # ( tapi ya gak mungkin semua bit nyala, atas bawah nyala impos)
 def detect_kena_tembok(position):
+    '''
+    bahaya kalo ganti width length but for now gud
+    '''
     x, y = position
     
     sensor = 0
@@ -256,7 +275,7 @@ def detect_kena_tembok(position):
     if(y < 30.0):
         # atas
         sensor +=1
-    elif(y >730):
+    elif(y > 730):
         # bawah
         sensor +=2
     
@@ -276,16 +295,18 @@ def check_velocity(velocity, threshold):
         return True
     return False
 
-def check():
-    pass
+def check_force(force, threshold):
+    fx, fy = force
+    if(abs(force) > threshold  or abs(fy) > threshold):
+        return True
+    return False
 
 
 def existMovementCheck(players, ball, doWallCheck):
     existMovement=False
-    force_threshold = 3060
+    force_threshold = 2755
     for obj in players:
-        vx, vy = obj.body.velocity
-        fx, fy = obj.body.force
+        # sensor tell kena tembok or no using bit stuff
         sensor=0
         if(doWallCheck):
             sensor=detect_kena_tembok(obj.body.position)
@@ -293,13 +314,20 @@ def existMovementCheck(players, ball, doWallCheck):
         # gak kena tembok atau gak dicek
         if(sensor==0):
             # assume gak kena tembok, then check force
-            vel_gud = check_velocity(obj.body.velocity)
-
-        if(abs(vx)+abs(vy) > 1e-7 or (abs(fx)>force_threshold) or (abs(fy) > force_threshold)):
-            existMovement=True
-            # print(obj.body.velocity)
-            break
+            existMovement = check_force(obj.body.force, force_threshold)
+            if(existMovement): break
+        
+        else:
+            # sensor != 0, berarti kenak at least 1 tembok
+            # cek velo kalo nabrak tembok
+            existMovement = check_velocity(obj.body.velocity, 1e-7)
+            if(existMovement):break
     
+    # kalau player gak gerak, cek bola
+    if(not existMovement):
+        ball_vel_good = check_velocity(ball.body.velocity, 1e-7)
+        existMovement=ball_vel_good
+
     return existMovement
 
 
@@ -625,20 +653,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     last_ball_toucher_id=0
     fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
 
-    # get player
+    # get player, self goal, opo goal, team, etc
     net, genome = team_net[0]
-    if(asA):
-        player = team_A[0]
-        self_team=team_A
-        opo_team=team_B
-        self_goal=goal_a
-        opo_goal=goal_b
-    else:
-        player = team_B[0]
-        self_team=team_B
-        opo_team=team_A
-        self_goal=goal_b
-        opo_goal=goal_a
+    player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
 
     forceQuit=False
     ronde_time = time.perf_counter()
