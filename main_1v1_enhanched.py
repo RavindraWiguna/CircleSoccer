@@ -726,7 +726,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_recorder['B']-=5000
             # raise ValueError('top')
             print('no move')
-            input('lanjut?')
         else:
             game_phase=GamePhase.Normal
 
