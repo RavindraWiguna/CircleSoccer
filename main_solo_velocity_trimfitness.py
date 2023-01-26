@@ -820,7 +820,7 @@ def run(config_file):
     p.add_reporter(neat.Checkpointer(30))
     try:
         winner = p.run(eval_genomes, 1000)
-        with open('winner_vel_small.pkl', 'wb') as mfile:
+        with open('winner_vel_fit.pkl', 'wb') as mfile:
             pickle.dump(winner, mfile)
             mfile.close()
             print('FINISHED')
@@ -832,7 +832,7 @@ def run(config_file):
 
 
 
-    with open('pop_vel_small.pkl', 'wb') as mfile:
+    with open('pop_vel_fit.pkl', 'wb') as mfile:
         pickle.dump(p, mfile)
         mfile.close()
         print('save population')
@@ -844,6 +844,6 @@ if __name__ == '__main__':
     # here so that the script will run successfully regardless of the
     # current working directory.
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, './neatUtils/config-neat-vel-small')
+    config_path = os.path.join(local_dir, './neatUtils/config-neat-vel-fit')
     run(config_path)
     pygame.quit()
