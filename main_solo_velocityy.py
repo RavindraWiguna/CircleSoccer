@@ -160,10 +160,11 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
     # fitness_recorder[id_toucher]
     solo_touch_ball_counter+=1
     solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
-    fitness_iter_touch = (1/solo_iter_to_touch)*multiplier_fitness_iter_touch
-    fitness_recorder[id_toucher] += fitness_iter_touch
-    # print('got fit', fitness_iter_touch, 'from', solo_iter_to_touch)
-    solo_iter_to_touch=1
+    if(solo_touch_ball_counter < max_touch):
+        fitness_iter_touch = (1/solo_iter_to_touch)*multiplier_fitness_iter_touch
+        fitness_recorder[id_toucher] += fitness_iter_touch
+        # print('got fit', fitness_iter_touch, 'from', solo_iter_to_touch)
+        solo_iter_to_touch=1
 
     # check if someone lose the ball
     if(last_ball_toucher_id==0):
