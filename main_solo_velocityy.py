@@ -518,7 +518,7 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     final_distance_goal = calculate_distance(opo_goal.body.position, ball.body.position)
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_goal/max_fitness
-    fitness *=34
+    fitness *=68
     return fitness
 
 '''
