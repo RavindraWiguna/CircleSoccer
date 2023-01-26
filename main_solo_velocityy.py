@@ -733,7 +733,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     game_phase = GamePhase.Normal
     second_last_toucher=0
     last_ball_toucher_id=0
-    fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
+    fitness_recorder = {'A':0, 'B':0, 'mendekat':0} # team fitness and individu fitness too
     solo_touch_ball_counter=0
     solo_dribble_ball_counter=0
     solo_iter_to_touch=1
@@ -785,7 +785,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # update fitness
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
         if(cur_distance_ball < prev_distance_ball and abs(cur_distance_ball-prev_distance_ball) > 50):
-            genomes[0][1].fitness+=0.1
+            # genomes[0][1].fitness+=0.1
+            fitness_recorder['mendekat']+=0.1
+            # fitness_recorder['mendekat'] = min(fitness_recorder['mendekat'], 500)
             # print('ngedeketin bola', cur_distance_ball, prev_distance_ball)
             prev_distance_ball=cur_distance_ball
 
@@ -858,6 +860,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # TOUCH N DRIBLEZ
     fitness_td = (solo_dribble_ball_counter+solo_touch_ball_counter)*100
     genomes[0][1].fitness += fitness_td
+
+    # mendekat
+    genomes[0][1].fitness += min(fitness_recorder['mendekat'], 500)
 
 
 
