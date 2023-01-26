@@ -826,7 +826,12 @@ def run(config_file):
     import pickle
     p = pickle.load(open('pop1.pkl', 'rb'))
     asA=True
-    winner = p.best_genome
+    dribler = input('u want dribler (y) or yang penting goaler? (n)')
+    if(dribler.lower()=='y'):
+        winner = pickle.load(open('winner.pkl', 'rb'))
+    else:
+        winner = p.best_genome
+    
     while True:
         asA=not asA
         winner.fitness=0.0
