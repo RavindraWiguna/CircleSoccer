@@ -541,7 +541,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 5.0
+    max_ronde_time = 50.0
 
     # reset global var
     score_data = {'A':0,'B':0}
