@@ -741,7 +741,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         existMovement=False
 
         # gerakin player
-        the_input = make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
+        the_input = make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant)
         # output probability action
         output = net.activate(the_input)
         process_output(output, genome, player)
