@@ -722,8 +722,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # endgame_fitness() no move ga dikasi reward
             isRun=False
             # punish!!!!!!!!!!
-            fitness_recorder['A']-=5000
-            fitness_recorder['B']-=5000
+            fitness_recorder['A']-=2500
+            fitness_recorder['B']-=2500
             # raise ValueError('top')
             print('no move')
         else:
@@ -745,8 +745,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             # punish
-            fitness_recorder['A'] -= 500
-            fitness_recorder['B'] -= 500
+            fitness_recorder['A'] -= 5000
+            fitness_recorder['B'] -= 5000
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
