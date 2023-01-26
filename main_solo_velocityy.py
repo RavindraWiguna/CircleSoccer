@@ -518,7 +518,7 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     final_distance_goal = calculate_distance(opo_goal.body.position, ball.body.position)
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_goal/max_fitness
-    fitness *=17
+    fitness *=34
     return fitness
 
 '''
@@ -815,8 +815,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
         genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
 
     # BALLZ
-    fitness_ballz = calculate_ball_fitness(player, ball)
-    genomes[0][1].fitness +=fitness_ballz
+    # fitness_ballz = calculate_ball_fitness(player, ball) (no ballz, sapa tau lucky)
+    # genomes[0][1].fitness +=fitness_ballz
     # print('ballfit', fitness_ballz)
 
     # GOALZ
