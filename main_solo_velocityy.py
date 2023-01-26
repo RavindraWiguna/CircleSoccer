@@ -874,17 +874,18 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
+    p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
-    # p.add_reporter(neat.StdOutReporter(True))
-    # stats = neat.StatisticsReporter()
-    # p.add_reporter(stats)
-    # p.add_reporter(neat.Checkpointer(30))
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(30))
 
     # Run for up to 300 generations.
     import pickle
-    p = pickle.load(open('pop_vel.pkl', 'rb'))
+    # p = pickle.load(open('pop_vel.pkl', 'rb'))
+    # p = neat.Checkpointer.restore_checkpoint('neat-')
     try:
         winner = p.run(eval_genomes, 1000)
         with open('winner_vel.pkl', 'wb') as mfile:
