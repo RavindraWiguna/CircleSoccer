@@ -36,6 +36,8 @@ fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
 solo_touch_ball_counter = 0
 solo_dribble_ball_counter= 0
 solo_iter_to_touch = 1
+ronde_time = time.perf_counter()
+
 
 multiplier_fitness_iter_touch = 500
 max_touch = 4
@@ -151,7 +153,8 @@ def goal_b_handler(arbiter, space, data):
     return True
 
 def ball_touch_handler(id_toucher, arbiter, space, data):
-    global fitness_recorder, last_ball_toucher_id, second_last_toucher, solo_touch_ball_counter, solo_dribble_ball_counter, solo_iter_to_touch
+    global fitness_recorder, last_ball_toucher_id, second_last_toucher
+    global solo_touch_ball_counter, solo_dribble_ball_counter, solo_iter_to_touch, ronde_time
     
     if(not fitness_recorder.__contains__(id_toucher)):
         fitness_recorder[id_toucher]=0
@@ -165,6 +168,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
         fitness_recorder[id_toucher] += fitness_iter_touch
         # print('got fit', fitness_iter_touch, 'from', solo_iter_to_touch)
         solo_iter_to_touch=1
+        ronde_time = time.perf_counter()
 
     # check if someone lose the ball
     if(last_ball_toucher_id==0):
@@ -604,7 +608,8 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, solo_dribble_ball_counter, solo_touch_ball_counter, solo_iter_to_touch
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder
+    global solo_dribble_ball_counter, solo_touch_ball_counter, solo_iter_to_touch, ronde_time
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -727,7 +732,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 5.0
+    max_ronde_time = 0.5
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -924,7 +929,7 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint84vel')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint99vel')
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
