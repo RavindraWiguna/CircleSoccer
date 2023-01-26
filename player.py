@@ -1,4 +1,5 @@
 from gameobject import CircleObject
+from numpy import log
 
 class Player(CircleObject):
     '''
@@ -14,12 +15,14 @@ class Player(CircleObject):
     # TOP SPEED
     TOP_SPEED_POSITIVE = 512
     TOP_SPEED_NEGATIVE = -TOP_SPEED_POSITIVE
+    ITER_TO_MAX  = 6
+    ITER_TO_STOP = 3
+
     # INCREMENT VEL FOR EACH MOVE
-    ITER_TO_MAX=6
     VEL_MAG = TOP_SPEED_POSITIVE/ITER_TO_MAX
     
     # SLOWING DOWN FACTOR
-    BRAKE_DIV = 1.5
+    BRAKE_DIV = log(TOP_SPEED_POSITIVE)/log(ITER_TO_STOP)
     # TOLERANCE BEFORE CHANGE DIRECTION
     TOLERANCE_POSITIVE = 1
     TOLERANCE_NEGATIVE = -TOLERANCE_POSITIVE
@@ -112,6 +115,22 @@ class Player(CircleObject):
         Vx, Vy = self.body.velocity
         Vx = self.move_positive(Vx, 0)
         self.body._set_velocity((Vx, Vy))
+    
+    def move_timur_laut_vel(self):
+        self.move_right_vel()
+        self.move_up_vel()
+
+    def move_barat_laut_vel(self):
+        self.move_left_vel()
+        self.move_up_vel()
+
+    def move_tenggara_vel(self):
+        self.move_right_vel()
+        self.move_down_vel()
+
+    def move_barat_daya_laut_vel(self):
+        self.move_left_vel()
+        self.move_down_vel()
 
     # nge solve kapan harus ngerem
     def solve(self):

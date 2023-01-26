@@ -303,10 +303,15 @@ def check_force(force, threshold):
     return False
 
 
-def existMovementCheck(players, ball, doWallCheck):
+def checkAllStandStill(players, ball, doWallCheck):
     existMovement=False
-    force_threshold = 3060
     vel_threshold = 1e-7
+
+    bit_top = 1
+    bit_bottom = 2
+    bit_left = 4
+    bit_right=8
+
     for obj in players:
         # sensor tell kena tembok or no using bit stuff
         sensor=0
@@ -316,23 +321,37 @@ def existMovementCheck(players, ball, doWallCheck):
         # gak kena tembok atau gak dicek
         if(sensor==0):
             # print('no nabrak')
-            # assume gak kena tembok, then check force
-            existMovement = check_force(obj.body.force, force_threshold)
-            if(existMovement): break
+            # assume gak kena tembok, then check
             
-            else:
-                # print('GA NABRAK TAPI GA ADA FORCE CEK VELOCITY')
-                existMovement = check_velocity(obj.body.velocity, vel_threshold)
-                if(existMovement):break
+            existMovement = check_velocity(obj.body.velocity, vel_threshold)
+            if(existMovement):break
 
-        
         else:
             # print('nabrak')
             # sensor != 0, berarti kenak at least 1 tembok
-            # cek velo kalo nabrak tembok
-            existMovement = check_velocity(obj.body.velocity, vel_threshold)
-            if(existMovement):break
+            
+            # cek arah player kalo nabrak tembok
+            dirX, dirY = obj.direction
+            
+            # cek nabrak atas # jika x gerak ke manapun atau y turun
+            if((sensor & bit_top) and (dirX != 0 or dirY == 1)):
+                existMovement=True
+                break
+
+            if((sensor & bit_bottom) and (dirX != 0 or dirY == -1)):
+                existMovement=True
+                break
+
+            if((sensor & bit_left) and (dirX == 1 or dirY != 0)):
+                existMovement=True
+                break
+
+            if((sensor & bit_bottom) and (dirX != 0 or dirY == -1)):
+                existMovement=True
+                break
     
+    ### END OF FOR LOOP ###
+
     # kalau player gak gerak, cek bola
     if(not existMovement):
         ball_vel_good = check_velocity(ball.body.velocity, vel_threshold)
@@ -512,18 +531,59 @@ def cap_magnitude(val, max_val, min_val):
     return val
 
 # get vx vy
-def process_output(output, genome, multiplier):
-    cumul_Vx = output[0] - output[1] # (x positive  - (x negative) ) -> if x- > x+, then cumul Vx < 0 
-    cumul_Vy = output[2] - output[3] # same
+def process_output(output, genome, player):
+    button = np.argmax(output)
 
-    cumul_Vx*=multiplier
-    cumul_Vy*=multiplier
+    '''
+    0 = idle
+    1 = up
+    2 = down
+    3 = left
+    4 = right
+    5 = timur laur
+    6 = tenggara
+    7 = barat daya
+    8 = barat laut
+    '''
+    if(button==0):
+        return # idle
+    
+    if(button==1):
+        player.move_up_vel()
+        return
 
-    # punish for doing nothing
-    if(abs(cumul_Vx) < 1e-3 and abs(cumul_Vy) < 1e-3):
-        genome[1].fitness -=1
+    if(button==2):
+        player.move_down_vel()
+        return
 
-    return cumul_Vx, cumul_Vy
+    if(button==3):
+        player.move_left_vel()
+        return
+
+    if(button==4):
+        player.move_right_vel()
+        return
+    
+    if(button==5):
+        player.move_timur_laut_vel()
+        return
+
+    if(button==6):
+        player.move_tenggara_vel()
+        return
+
+    if(button==7):
+        player.move_barat_daya_vel()
+        return
+
+    if(button==8):
+        player.move_barat_laut_vel()
+        return
+
+def solve_players(players):
+    for player in players:
+        player.solve()
+
 
 ### ==== MAIN FUNCTION ==== ###
 
@@ -683,17 +743,18 @@ def game(window, width, height, genomes, config, doRandom, asA):
 
         # gerakin player
         the_input = make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
-        # output FX and FY
+        # output probability action
         output = net.activate(the_input)
-        vx, vy = process_output(output, genome, multiplier=3060)
-        player.set_velocity(vx, vy)
+        process_output(output, genome, player)
 
         # cek apakah ada movement (sebelum step, karena step ngereset force)
         player_cek = [player]
-        existMovement=existMovementCheck(player_cek, ball, True)
+        existMovement=checkAllStandStill(player_cek, ball, True)
+        
+        # IMPORTANT! solve the player movement
+        solve_players(player_cek)
 
         # update world and graphics
-        # for _ in range(step):
         space.step(dt)
         if(doVisualize):
             draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
@@ -722,18 +783,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_recorder['A']-=2500
             fitness_recorder['B']-=2500
             # print('no move')
-
-            # cek apa nabrak tembok pas selesai, if yes punish lil bit
-            sensor = detect_kena_tembok(player.body.position)
-            # kalo kenak kurangi
-            boolval = sensor > 0
-            notboolval = not boolval
-            fitness_recorder['A'] -= boolval * 500
-            fitness_recorder['B'] -= boolval* 500
-            # kalo gak kena kasi gud
-            fitness_recorder['A'] += notboolval * 250
-            fitness_recorder['B'] += notboolval * 250
-
         else:
             game_phase=GamePhase.Normal
 

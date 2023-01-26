@@ -107,7 +107,7 @@ def run(window, width, height):
     '''
     isRun = True
     clock = pygame.time.Clock()
-    fps = 60
+    fps = 120
     step=1
     dt = 1/(step*fps)
 
