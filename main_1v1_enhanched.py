@@ -724,8 +724,13 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish!!!!!!!!!!
             fitness_recorder['A']-=2500
             fitness_recorder['B']-=2500
-            # raise ValueError('top')
             print('no move')
+
+            # cek apa nabrak tembok pas selesai, if yes punish lil bit
+            sensor = detect_kena_tembok(player.body.position)
+            fitness_recorder['A'] -= (sensor > 0) * 500
+            fitness_recorder['B'] -= (sensor > 0)* 500
+
         else:
             game_phase=GamePhase.Normal
 
