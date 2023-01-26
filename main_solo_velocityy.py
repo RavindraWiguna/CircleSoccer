@@ -168,6 +168,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
         fitness_recorder[id_toucher] += fitness_iter_touch
         # print('got fit', fitness_iter_touch, 'from', solo_iter_to_touch)
         solo_iter_to_touch=1
+        # print('reset')
         ronde_time = time.perf_counter()
 
     # check if someone lose the ball
@@ -732,7 +733,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 0.5
+    max_ronde_time = 1.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
