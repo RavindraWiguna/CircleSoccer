@@ -297,14 +297,16 @@ def check_velocity(velocity, threshold):
 
 def check_force(force, threshold):
     fx, fy = force
-    if(abs(force) > threshold  or abs(fy) > threshold):
+    total_mag = calculate_distance((0,0), (fx, fy))
+    if(total_mag > threshold):
         return True
     return False
 
 
 def existMovementCheck(players, ball, doWallCheck):
     existMovement=False
-    force_threshold = 2755
+    force_threshold = 3060
+    vel_threshold = 1e-7
     for obj in players:
         # sensor tell kena tembok or no using bit stuff
         sensor=0
@@ -313,19 +315,27 @@ def existMovementCheck(players, ball, doWallCheck):
         
         # gak kena tembok atau gak dicek
         if(sensor==0):
+            # print('no nabrak')
             # assume gak kena tembok, then check force
             existMovement = check_force(obj.body.force, force_threshold)
             if(existMovement): break
+            
+            else:
+                # print('GA NABRAK TAPI GA ADA FORCE CEK VELOCITY')
+                existMovement = check_velocity(obj.body.velocity, vel_threshold)
+                if(existMovement):break
+
         
         else:
+            # print('nabrak')
             # sensor != 0, berarti kenak at least 1 tembok
             # cek velo kalo nabrak tembok
-            existMovement = check_velocity(obj.body.velocity, 1e-7)
+            existMovement = check_velocity(obj.body.velocity, vel_threshold)
             if(existMovement):break
     
     # kalau player gak gerak, cek bola
     if(not existMovement):
-        ball_vel_good = check_velocity(ball.body.velocity, 1e-7)
+        ball_vel_good = check_velocity(ball.body.velocity, vel_threshold)
         existMovement=ball_vel_good
 
     return existMovement
@@ -682,8 +692,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
         player._apply_force((fx, fy)) # di cap di sini
 
         # cek apakah ada movement (sebelum step, karena step ngereset force)
-        objs = [ball, *team_A, *team_B]
-        existMovement=existMovementCheck(objs)
+        player_cek = [player]
+        existMovement=existMovementCheck(player_cek, ball, True)
 
         # update world and graphics
         # for _ in range(step):
@@ -714,7 +724,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish!!!!!!!!!!
             fitness_recorder['A']-=5000
             fitness_recorder['B']-=5000
-            # print('no move')
+            # raise ValueError('top')
+            print('no move')
+            input('lanjut?')
         else:
             game_phase=GamePhase.Normal
 
@@ -736,13 +748,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish
             fitness_recorder['A'] -= 500
             fitness_recorder['B'] -= 500
-            
-            # cek output [debug]
-            the_input = make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
-            # output FX and FY
-            output = net.activate(the_input)
-            fx, fy = process_output(output, genome, multiplier=3060)
-            print(fx, fy, abs(fx), abs(fy))
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
@@ -750,11 +755,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     
     if(asA):
         genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
-        player = team_A[0]
-        opo_goal = goal_b[0]
     else:
-        player = team_B[0]
-        opo_goal = goal_a[0]
         genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
 
     # BALLZ
@@ -763,7 +764,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # print('ballfit', fitness_ballz)
 
     # GOALZ
-    fitness_goalz = calculate_ball_goal_fitness(opo_goal, ball)
+    fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)
     genomes[0][1].fitness += fitness_goalz
 
 

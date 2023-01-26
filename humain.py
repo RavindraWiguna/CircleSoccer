@@ -205,7 +205,7 @@ def run(window, width, height):
     start_time_after_goal=None
     wait_after_goal=1.5
     while isRun:
-        force_magnitude=9000
+        force_magnitude=2000
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 isRun=False
@@ -231,11 +231,11 @@ def run(window, width, height):
                 team_A[0]._apply_force(brake_force)
 
         # for _ in range(step):
-        print(team_A[0].body.position)
+        print(team_A[0].body.velocity)
         space.step(dt)
         draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
-        # clock.tick(fps)
+        clock.tick(fps)
 
         if(game_phase==GamePhase.JUST_GOAL):
             if(start_time_after_goal is None):
