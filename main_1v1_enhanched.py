@@ -365,7 +365,7 @@ def out_of_bound_check(objs, width, height):
 
 def existMovementCheck(objs):
     existMovement=False
-    force_threshold = 2755
+    force_threshold = 3060
     for obj in objs:
         vx, vy = obj.body.velocity
         fx, fy = obj.body.force
@@ -551,6 +551,21 @@ def game(window, width, height, genomes, config, doRandom, asA):
     last_ball_toucher_id=0
     fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
 
+    # get player
+    net, genome = team_net[0]
+    if(asA):
+        player = team_A[0]
+        self_team=team_A
+        opo_team=team_B
+        self_goal=goal_a
+        opo_goal=goal_b
+    else:
+        player = team_B[0]
+        self_team=team_B
+        opo_team=team_A
+        self_goal=goal_b
+        opo_goal=goal_a
+
     forceQuit=False
     ronde_time = time.perf_counter()
     while isRun:
@@ -569,22 +584,11 @@ def game(window, width, height, genomes, config, doRandom, asA):
         existMovement=False
 
         # gerakin player
-        if(asA):
-            player = team_A[0]
-            net, genome = team_net[0]
-            the_input = make_data_masuk(team_A, team_B, goal_a, goal_b, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
-            # output FX and FY
-            output = net.activate(the_input)
-            fx, fy = process_output(output, genome, multiplier=3060)
-            player._apply_force((fx, fy)) # di cap di sini
-        else:
-            player = team_B[0]
-            net, genome = team_net[0]
-            the_input = make_data_masuk(team_B, team_A, goal_b, goal_a, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
-            # output FX and FY
-            output = net.activate(the_input)
-            fx, fy = process_output(output, genome, multiplier=3060)
-            player._apply_force((fx, fy)) # di cap di sini
+        the_input = make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
+        # output FX and FY
+        output = net.activate(the_input)
+        fx, fy = process_output(output, genome, multiplier=3060)
+        player._apply_force((fx, fy)) # di cap di sini
 
         # cek apakah ada movement (sebelum step, karena step ngereset force)
         objs = [ball, *team_A, *team_B]
@@ -641,6 +645,13 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish
             fitness_recorder['A'] -= 500
             fitness_recorder['B'] -= 500
+            
+            # cek output [debug]
+            the_input = make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
+            # output FX and FY
+            output = net.activate(the_input)
+            fx, fy = process_output(output, genome, multiplier=3060)
+            print(fx, fy, abs(fx), abs(fy))
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
@@ -719,18 +730,13 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-223')
-    # p.config=config
-    # p.population = checkpointer.population
-    # checkpointer.
     import pickle
     # p = pickle.load(open('pop.pkl', 'rb'))
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-223')
     p.config=config
     print(p.config==config)
     print(p.config)
 
-
-    # p.run(eval_genomes, 10)
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
@@ -759,8 +765,8 @@ def run(config_file):
     # node_names = {-1: 'A', -2: 'B', 0: 'A XOR B'}
     # visualize.draw_net(config, winner, True, node_names=node_names)
     # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    # visualize.plot_stats(stats, ylog=False, view=True)
-    # visualize.plot_species(stats, view=True)
+    visualize.plot_stats(stats, ylog=False, view=True)
+    visualize.plot_species(stats, view=True)
 
 
 
@@ -768,14 +774,10 @@ def run(config_file):
         pickle.dump(p, mfile)
         mfile.close()
         print('save population')
-    # p =  pickle.load(open('pop.pkl', 'rb'))
-    # players = [[1, winner], [2, winner], [3, winner], [4, winner], [5, winner], [6, winner]]
-    # game(window, WIDTH, HEIGHT, players, config, False)
-    # p.run(eval_genomes, 10)
+
 
 
 if __name__ == '__main__':
-    # run(window, WIDTH, HEIGHT)
     # Determine path to configuration file. This path manipulation is
     # here so that the script will run successfully regardless of the
     # current working directory.
