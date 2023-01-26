@@ -490,12 +490,12 @@ def initialize_fitness(genome):
 def endgame_fitness():
     global fitness_recorder, score_data
     if(score_data['A']>score_data['B']):
-        fitness_recorder['A']+=1000
-        fitness_recorder['B']-=1000
+        fitness_recorder['A']+=5000
+        fitness_recorder['B']-=5000
         # print('A win')
     elif(score_data['A']<score_data['B']):
-        fitness_recorder['A']-=1000
-        fitness_recorder['B']+=1000
+        fitness_recorder['A']-=5000
+        fitness_recorder['B']+=5000
         # print('B win')
     else:
         # draw
@@ -874,16 +874,17 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    # p = neat.Population(config)
 
-    # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(30))
+    # # Add a stdout reporter to show progress in the terminal.
+    # p.add_reporter(neat.StdOutReporter(True))
+    # stats = neat.StatisticsReporter()
+    # p.add_reporter(stats)
+    # p.add_reporter(neat.Checkpointer(30))
 
     # Run for up to 300 generations.
     import pickle
+    p = pickle.load(open('pop_vel.pkl', 'rb'))
     try:
         winner = p.run(eval_genomes, 1000)
         with open('winner_vel.pkl', 'wb') as mfile:
@@ -893,8 +894,8 @@ def run(config_file):
     except KeyboardInterrupt:
         print('voila')
 
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
+    visualize.plot_stats(p.reporters.reporters[1], ylog=False, view=True)
+    visualize.plot_species(p.reporters.reporters[1], view=True)
 
 
 
