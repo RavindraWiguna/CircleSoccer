@@ -231,6 +231,7 @@ def run(window, width, height):
                 team_A[0]._apply_force(brake_force)
 
         # for _ in range(step):
+        print(team_A[0].body.position)
         space.step(dt)
         draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()

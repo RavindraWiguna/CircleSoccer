@@ -30,3 +30,14 @@ jarak ke oposite goal tiang -> 42
 dx,dy ke ball -> 44
 
 & C:/Users/Avin/anaconda3/envs/AI_and_Vision/python.exe -m cProfile -s ncalls  d:/Sem5Faster/pypy/pygameai/futbol/main_1v1_enhanched.py > profiling.txt
+
+tembok kiri:->gawang
+x=28.988253483886883->34.9-> bawah 35 threshold
+tembok bawah:
+y=731.00268410898 -> sama -> atas 730
+
+tembok atas:
+y=28.98, -> pakek bawah 30 aja
+
+tembok kanan:
+x=1251, gawang 1239 -> atas 1238
