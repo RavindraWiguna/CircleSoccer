@@ -834,7 +834,7 @@ def run(config_file):
     # print('Restoring...')
     import pickle
     # p = pickle.load(open('pop.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-223')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-223-force')
     p.config=config
     print(p.config==config)
     print(p.config)
