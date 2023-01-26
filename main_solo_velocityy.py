@@ -107,14 +107,14 @@ def goal_a_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
     if(game_phase==GamePhase.Normal):
         score_data['B']+=1
-        fitness_recorder['B']+=120
-        fitness_recorder['A']-=200
+        fitness_recorder['B']+=1200
+        fitness_recorder['A']-=2000
         # print('A -20| B + 12')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamB(last_ball_toucher_id)):
             # eyo dia ngegolin
-            fitness_recorder[last_ball_toucher_id]+=300.0
+            fitness_recorder[last_ball_toucher_id]+=3000.0
             # print(last_ball_toucher_id, 'score the goal for tim B dia')
             if(isTeamB(second_last_toucher)):
                 # hoo ngassist
@@ -131,8 +131,8 @@ def goal_b_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
     if(game_phase==GamePhase.Normal):
         score_data['A']+=1
-        fitness_recorder['A']+=120
-        fitness_recorder['B']-=200
+        fitness_recorder['A']+=1200
+        fitness_recorder['B']-=2000
         # print('A + 12| B -20 ')
         game_phase=GamePhase.JUST_GOAL
 
@@ -143,7 +143,7 @@ def goal_b_handler(arbiter, space, data):
             
         else:
             # bruh tim A ngegol ke B? mantap
-            fitness_recorder[last_ball_toucher_id]+=300.0
+            fitness_recorder[last_ball_toucher_id]+=3000.0
             # print('messii of tim A', last_ball_toucher_id)
             if(isTeamA(second_last_toucher)):
                 # hoo ngassist
@@ -793,7 +793,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
         if(cur_distance_ball < prev_distance_ball and abs(cur_distance_ball-prev_distance_ball) > 50):
             # genomes[0][1].fitness+=0.1
-            fitness_recorder['mendekat']+=0.1
+            fitness_recorder['mendekat']+=1
             # fitness_recorder['mendekat'] = min(fitness_recorder['mendekat'], 500)
             # print('ngedeketin bola', cur_distance_ball, prev_distance_ball)
             prev_distance_ball=cur_distance_ball
@@ -869,7 +869,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     genomes[0][1].fitness += fitness_td
 
     # mendekat
-    genomes[0][1].fitness += min(fitness_recorder['mendekat'], 500)
+    genomes[0][1].fitness += min(fitness_recorder['mendekat'], 1000)
 
 
 
@@ -930,7 +930,9 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint99vel')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-120')
+    p.config=config
+     
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
