@@ -128,7 +128,7 @@ class Player(CircleObject):
         self.move_right_vel()
         self.move_down_vel()
 
-    def move_barat_daya_laut_vel(self):
+    def move_barat_daya_vel(self):
         self.move_left_vel()
         self.move_down_vel()
 
