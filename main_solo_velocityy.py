@@ -150,7 +150,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
         fitness_recorder[id_toucher]=0
     
     # print(id_toucher, 'touch the ball')
-    fitness_recorder[id_toucher]+=10
+    fitness_recorder[id_toucher]+=100
 
     # check if someone lose the ball
     if(last_ball_toucher_id==0):
@@ -159,7 +159,7 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
 
     # touching the ball again, dribling, more point i guess
     elif(last_ball_toucher_id==id_toucher):
-        fitness_recorder[id_toucher]+=30
+        fitness_recorder[id_toucher]+=300
         # print(id_toucher, 'dribble')
 
     
