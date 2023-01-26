@@ -107,7 +107,7 @@ def run(window, width, height):
     '''
     isRun = True
     clock = pygame.time.Clock()
-    fps = 120
+    fps = 60
     step=1
     dt = 1/(step*fps)
 
@@ -213,25 +213,26 @@ def run(window, width, height):
 
         keys = pygame.key.get_pressed()
         if(game_phase==GamePhase.Normal):
-            if(keys[pygame.K_LSHIFT]):
-                force_magnitude=18000
             if(keys[pygame.K_UP]):
-                team_A[0].move_up(force_magnitude)
+                team_A[0].move_up_vel()
             elif(keys[pygame.K_DOWN]):
-                team_A[0].move_down(force_magnitude)
+                team_A[0].move_down_vel()
                 # print("down")
             if(keys[pygame.K_LEFT]):
-                team_A[0].move_left(force_magnitude)
+                team_A[0].move_left_vel()
                 # print("left")
             elif(keys[pygame.K_RIGHT]):
-                team_A[0].move_right(force_magnitude)
+                team_A[0].move_right_vel()
             
-            if(keys[pygame.K_SPACE]):
-                brake_force = -team_A[0].body.velocity * team_A[0].body.mass * 1.5
-                team_A[0]._apply_force(brake_force)
+            # if(keys[pygame.K_SPACE]):
+                # brake_force = -team_A[0].body.velocity * team_A[0].body.mass * 1.5
+                # team_A[0]._apply_force(brake_force)
 
         # for _ in range(step):
-        print(team_A[0].body.velocity)
+        # print(team_A[0].direction)
+        team_A[0].solve()
+        # print(team_A[0].body.velocity)
+        # print('---')
         space.step(dt)
         draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
