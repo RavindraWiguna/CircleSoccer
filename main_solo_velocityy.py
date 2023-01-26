@@ -280,10 +280,10 @@ def detect_kena_tembok(position):
         sensor +=2
     
     # tembok kiri kanan
-    if(x < 35):
+    if(x < 77):
         # di kiri gawang or tembok kiri
         sensor += 4
-    elif(x > 1238):
+    elif(x > 1196):
         # kanan, gawang or tembok kanan
         sensor +=8
     
