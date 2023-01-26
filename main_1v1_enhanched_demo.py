@@ -541,7 +541,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 50.0
+    max_ronde_time = 5.0
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -561,7 +561,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 break
         
         existMovement=False
-
         # gerakin player
         if(asA):
             player = team_A[0]
@@ -583,10 +582,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # update world and graphics
         # for _ in range(step):
         space.step(dt)
-        # if(doVisualize):
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
-        # clock.tick(fps)
+        clock.tick(fps)
 
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -609,6 +607,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # lsg break
             # endgame_fitness() no move ga dikasi reward
             isRun=False
+            # punish!!!!!!!!!!
+            fitness_recorder['A']-=5000
+            fitness_recorder['B']-=5000
             # print('no move')
         else:
             game_phase=GamePhase.Normal
@@ -629,8 +630,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             # punish
-            fitness_recorder['A'] -= 10000
-            fitness_recorder['B'] -= 10000
+            fitness_recorder['A'] -= 500
+            fitness_recorder['B'] -= 500
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
@@ -654,8 +655,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
     fitness_goalz = calculate_ball_goal_fitness(opo_goal, ball)
     genomes[0][1].fitness += fitness_goalz
 
-
-    print(genomes[0][1].fitness)
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -706,58 +705,7 @@ def run(config_file):
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
 
-    # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
-
-    # get previous population
-    # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-106')
-    # p.config=config
-    # p.population = checkpointer.population
-    # checkpointer.
-
-
-    # p.run(eval_genomes, 10)
-    # Add a stdout reporter to show progress in the terminal.
-    # p.add_reporter(neat.StdOutReporter(True))
-    # stats = neat.StatisticsReporter()
-    # p.add_reporter(stats)
-    # p.add_reporter(neat.Checkpointer(30))
-
-    # Run for up to 300 generations.
-    # winner = p.run(eval_genomes, 1000)
-
-    # Display the winning genome.
-    # print('\nBest genome:\n{!s}'.format(winner))
-
-    # # Show output of the most fit genome against training data.
-    # print('\nOutput:')
-    # winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-    # for xi, xo in zip(xor_the_inputs, xor_outputs):
-    #     output = winner_net.activate(xi)
-    #     print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
-
-    # node_names = {-1: 'A', -2: 'B', 0: 'A XOR B'}
-    # visualize.draw_net(config, winner, True, node_names=node_names)
-    # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    # visualize.plot_stats(stats, ylog=False, view=True)
-    # visualize.plot_species(stats, view=True)
-
     import pickle
-    # with open('winner.pkl', 'wb') as mfile:
-    #     pickle.dump(winner, mfile)
-    #     mfile.close()
-    #     print('FINISHED')
-
-    # with open('pop.pkl', 'wb') as mfile:
-    #     pickle.dump(p, mfile)
-    #     mfile.close()
-    #     print('save population')
-
-    # p =  pickle.load(open('pop.pkl', 'rb'))
-    # players = [[1, winner], [2, winner], [3, winner], [4, winner], [5, winner], [6, winner]]
-    # game(window, WIDTH, HEIGHT, players, config, False)
-    # p.run(eval_genomes, 10)
     winner = pickle.load(open('winner.pkl', 'rb'))
     asA=True
     while True:

@@ -615,8 +615,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # endgame_fitness() no move ga dikasi reward
             isRun=False
             # punish!!!!!!!!!!
-            fitness_recorder['A']-=1000
-            fitness_recorder['B']-=1000
+            fitness_recorder['A']-=5000
+            fitness_recorder['B']-=5000
             # print('no move')
         else:
             game_phase=GamePhase.Normal
@@ -637,8 +637,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             # punish
-            fitness_recorder['A'] -= 10000
-            fitness_recorder['B'] -= 10000
+            fitness_recorder['A'] -= 500
+            fitness_recorder['B'] -= 500
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
@@ -717,12 +717,12 @@ def run(config_file):
 
     # get previous population
     # print('Restoring...')
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-106')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-223')
     # p.config=config
     # p.population = checkpointer.population
     # checkpointer.
     import pickle
-    p = pickle.load(open('pop.pkl', 'rb'))
+    # p = pickle.load(open('pop.pkl', 'rb'))
     p.config=config
     print(p.config==config)
     print(p.config)
@@ -730,14 +730,20 @@ def run(config_file):
 
     # p.run(eval_genomes, 10)
     # Add a stdout reporter to show progress in the terminal.
-    # p.add_reporter(neat.StdOutReporter(True))
-    # stats = neat.StatisticsReporter()
-    # p.add_reporter(stats)
-    # p.add_reporter(neat.Checkpointer(30))
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(30))
 
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 1000)
-
+    try:
+        winner = p.run(eval_genomes, 1000)
+        with open('winner1.pkl', 'wb') as mfile:
+            pickle.dump(winner, mfile)
+            mfile.close()
+            print('FINISHED')
+    except KeyboardInterrupt:
+        print('voila')
     # Display the winning genome.
     # print('\nBest genome:\n{!s}'.format(winner))
 
@@ -754,12 +760,9 @@ def run(config_file):
     # visualize.plot_stats(stats, ylog=False, view=True)
     # visualize.plot_species(stats, view=True)
 
-    with open('winner.pkl', 'wb') as mfile:
-        pickle.dump(winner, mfile)
-        mfile.close()
-        print('FINISHED')
 
-    with open('pop.pkl', 'wb') as mfile:
+
+    with open('pop1.pkl', 'wb') as mfile:
         pickle.dump(p, mfile)
         mfile.close()
         print('save population')
