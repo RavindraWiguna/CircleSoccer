@@ -83,6 +83,11 @@ def create_boundaries(space, width, height, bwidth):
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
 
+'''
+=====================
+   SEPAK BOLA FUNC
+=====================
+'''
 def isTeamA(id):
     return id < 6 and id > 0
 
@@ -205,6 +210,11 @@ team_b1_handler = partial(ball_touch_handler, CollisionType.B_P1.value)
 team_b2_handler = partial(ball_touch_handler, CollisionType.B_P2.value)
 team_b3_handler = partial(ball_touch_handler, CollisionType.B_P3.value)
 
+'''
+==============
+  GAME UTIL
+==============
+'''
 
 def reset_objects(objs):
     for obj in objs:
@@ -214,6 +224,128 @@ def reset_score():
     global score_data
     score_data['A']=0
     score_data['B']=0
+
+def kick_player(player):
+    player.body._set_position((-10,-10))
+
+def get_player_team_goal(team_A, team_B, goal_a, goal_b, asA):
+    if(asA):
+        player = team_A[0]
+        self_team=team_A
+        opo_team=team_B
+        self_goal=goal_a
+        opo_goal=goal_b
+    else:
+        player = team_B[0]
+        self_team=team_B
+        opo_team=team_A
+        self_goal=goal_b
+        opo_goal=goal_a
+    
+    return player, self_team, opo_team, self_goal, opo_goal
+
+'''
+=======================
+  GAME TERMINATION UTL
+=======================
+'''
+def out_of_bound_check(objs, width, height):
+    existOutOfBound=False
+    for obj in objs:
+        px, py = obj.body.position
+        # print(px, py)
+        if(px < -10 or py < -10 or px > width or py > height):
+            # endgame_fitness() keluar juga ga dikasi reward
+            existOutOfBound=True
+            print('out of bound with tolerance')
+            break
+    
+    return existOutOfBound
+
+# kalau tembok atas 1, bawah = 2, kiri = 4, kanan = 8, gak kena = 0 (semua bit mati) 
+# ( tapi ya gak mungkin semua bit nyala, atas bawah nyala impos)
+def detect_kena_tembok(position):
+    '''
+    bahaya kalo ganti width length but for now gud
+    '''
+    x, y = position
+    
+    sensor = 0
+    # tembok ci- i mean atas-bawah:
+    if(y < 30.0):
+        # atas
+        sensor +=1
+    elif(y > 730):
+        # bawah
+        sensor +=2
+    
+    # tembok kiri kanan
+    if(x < 35):
+        # di kiri gawang or tembok kiri
+        sensor += 4
+    elif(x > 1238):
+        # kanan, gawang or tembok kanan
+        sensor +=8
+    
+    return sensor
+
+def check_velocity(velocity, threshold):
+    vx, vy = velocity
+    if(abs(vx)+abs(vy) > threshold):
+        return True
+    return False
+
+def check_force(force, threshold):
+    fx, fy = force
+    total_mag = calculate_distance((0,0), (fx, fy))
+    if(total_mag > threshold):
+        return True
+    return False
+
+
+def existMovementCheck(players, ball, doWallCheck):
+    existMovement=False
+    force_threshold = 3060
+    vel_threshold = 1e-7
+    for obj in players:
+        # sensor tell kena tembok or no using bit stuff
+        sensor=0
+        if(doWallCheck):
+            sensor=detect_kena_tembok(obj.body.position)
+        
+        # gak kena tembok atau gak dicek
+        if(sensor==0):
+            # print('no nabrak')
+            # assume gak kena tembok, then check force
+            existMovement = check_force(obj.body.force, force_threshold)
+            if(existMovement): break
+            
+            else:
+                # print('GA NABRAK TAPI GA ADA FORCE CEK VELOCITY')
+                existMovement = check_velocity(obj.body.velocity, vel_threshold)
+                if(existMovement):break
+
+        
+        else:
+            # print('nabrak')
+            # sensor != 0, berarti kenak at least 1 tembok
+            # cek velo kalo nabrak tembok
+            existMovement = check_velocity(obj.body.velocity, vel_threshold)
+            if(existMovement):break
+    
+    # kalau player gak gerak, cek bola
+    if(not existMovement):
+        ball_vel_good = check_velocity(ball.body.velocity, vel_threshold)
+        existMovement=ball_vel_good
+
+    return existMovement
+
+
+'''
+==================
+   AI INPUT UTIL
+=================
+'''
 
 def get_ball_pos_vel(ball, constant, norm_vel_div):
     ball_datas = []
@@ -271,26 +403,6 @@ def get_position_distance(src_pos, dst_pos, constant):
     dy*=constant
     return [dx, dy]
 
-def initialize_fitness(genome):
-    if(genome.fitness == None):
-        genome.fitness=0.0
-
-def endgame_fitness():
-    global fitness_recorder, score_data
-    if(score_data['A']>score_data['B']):
-        fitness_recorder['A']+=1000
-        fitness_recorder['B']-=1000
-        # print('A win')
-    elif(score_data['A']<score_data['B']):
-        fitness_recorder['A']-=1000
-        fitness_recorder['B']+=1000
-        # print('B win')
-    else:
-        # draw
-        fitness_recorder['A']+=250
-        fitness_recorder['B']+=250
-        # print('Got Draw')
-
 def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant, type_game):
     player = self_team[id_self]
     # self team posv
@@ -347,57 +459,30 @@ def make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, id_self, wid
     # raise NameError('ehe')
     return the_input
 
-def kick_player(player):
-    player.body._set_position((-10,-10))
+'''
+================
+ AI FITNESS UTIL
+================
+'''
+def initialize_fitness(genome):
+    if(genome.fitness == None):
+        genome.fitness=0.0
 
-def out_of_bound_check(objs, width, height):
-    existOutOfBound=False
-    for obj in objs:
-        px, py = obj.body.position
-        # print(px, py)
-        if(px < -10 or py < -10 or px > width or py > height):
-            # endgame_fitness() keluar juga ga dikasi reward
-            existOutOfBound=True
-            print('out of bound with tolerance')
-            break
-    
-    return existOutOfBound
-
-def existMovementCheck(objs):
-    existMovement=False
-    for obj in objs:
-        vx, vy = obj.body.velocity
-        fx, fy = obj.body.force
-        # print(fx, fy)
-        if(abs(vx)+abs(vy) > 1e-7 or (abs(fx)>2755) or (abs(fy) > 2755)):
-            existMovement=True
-            # print(obj.body.velocity)
-            break
-    
-    return existMovement
-
-def cap_magnitude(val, max_val, min_val):
-    val = max(min_val, min(max_val, val))
-    return val
-
-# get fx, fy
-def process_output(output, genome, multiplier):
-    cumul_fx = output[0] - output[1] # (x positive  - (x negative) ) -> if x- > x+, then cumul fx < 0 
-    cumul_fy = output[2] - output[3] # same
-
-    cumul_fx*=multiplier
-    cumul_fy*=multiplier
-
-    cumul_fx = cap_magnitude(cumul_fx, 18000, -18000)
-    cumul_fy = cap_magnitude(cumul_fy, 18000, -18000)
-
-    # punish for doing nothing
-    if(abs(cumul_fx) < 1e-5 and abs(cumul_fy) < 1e-5):
-        genome[1].fitness -=0.1
-        # print('choose diem')
-
-    print(cumul_fx, cumul_fy)
-    return cumul_fx, cumul_fy
+def endgame_fitness():
+    global fitness_recorder, score_data
+    if(score_data['A']>score_data['B']):
+        fitness_recorder['A']+=1000
+        fitness_recorder['B']-=1000
+        # print('A win')
+    elif(score_data['A']<score_data['B']):
+        fitness_recorder['A']-=1000
+        fitness_recorder['B']+=1000
+        # print('B win')
+    else:
+        # draw
+        fitness_recorder['A']+=250
+        fitness_recorder['B']+=250
+        # print('Got Draw')
 
 # FITNESS BALLZ
 def calculate_ball_fitness(player, ball):
@@ -417,6 +502,31 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     fitness *=17
     return fitness
 
+'''
+=================
+  AI OUTPUT UTIL
+=================
+'''
+def cap_magnitude(val, max_val, min_val):
+    val = max(min_val, min(max_val, val))
+    return val
+
+# get fx, fy
+def process_output(output, genome, multiplier):
+    cumul_fx = output[0] - output[1] # (x positive  - (x negative) ) -> if x- > x+, then cumul fx < 0 
+    cumul_fy = output[2] - output[3] # same
+
+    cumul_fx*=multiplier
+    cumul_fy*=multiplier
+
+    cumul_fx = cap_magnitude(cumul_fx, 18000, -18000)
+    cumul_fy = cap_magnitude(cumul_fy, 18000, -18000)
+
+    # punish for doing nothing
+    if(abs(cumul_fx) < 1e-5 and abs(cumul_fy) < 1e-5):
+        genome[1].fitness -=0.1
+
+    return cumul_fx, cumul_fy
 
 ### ==== MAIN FUNCTION ==== ###
 
@@ -553,46 +663,40 @@ def game(window, width, height, genomes, config, doRandom, asA):
     last_ball_toucher_id=0
     fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
 
+    # get player, self goal, opo goal, team, etc
+    net, genome = team_net[0]
+    player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
+
     forceQuit=False
     ronde_time = time.perf_counter()
     while isRun:
+        doVisualize=False
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 forceQuit=True
                 isRun=False
                 print('force quit')
                 break
-        
-        existMovement=False
-        # gerakin player
-        if(asA):
-            player = team_A[0]
-            net, genome = team_net[0]
-            the_input = make_data_masuk(team_A, team_B, goal_a, goal_b, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
-            # output FX and FY
-            output = net.activate(the_input)
-            fx, fy = process_output(output, genome, multiplier=3060)
-            player._apply_force((fx, fy)) # di cap di sini
-        else:
-            player = team_B[0]
-            net, genome = team_net[0]
-            the_input = make_data_masuk(team_B, team_A, goal_b, goal_a, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
-            # output FX and FY
-            output = net.activate(the_input)
-            fx, fy = process_output(output, genome, multiplier=3060)
-            player._apply_force((fx, fy)) # di cap di sini
 
-        # for _ in range(step):
-        
-        # cek apakah ada movement
-        objs = [ball, *team_A, *team_B]
-        existMovement=existMovementCheck(objs)
+        existMovement=False
+
+        # gerakin player
+        the_input = make_data_masuk(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant, 'solo')
+        # output FX and FY
+        output = net.activate(the_input)
+        fx, fy = process_output(output, genome, multiplier=3060)
+        player._apply_force((fx, fy)) # di cap di sini
+
+        # cek apakah ada movement (sebelum step, karena step ngereset force)
+        player_cek = [player]
+        existMovement=existMovementCheck(player_cek, ball, True)
 
         # update world and graphics
+        # for _ in range(step):
         space.step(dt)
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
         pygame.display.update()
-        # clock.tick(fps)
+        clock.tick(fps)
 
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -613,9 +717,21 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # endgame_fitness() no move ga dikasi reward
             isRun=False
             # punish!!!!!!!!!!
-            fitness_recorder['A']-=5000
-            fitness_recorder['B']-=5000
-            print('no move')
+            fitness_recorder['A']-=2500
+            fitness_recorder['B']-=2500
+            # print('no move')
+
+            # cek apa nabrak tembok pas selesai, if yes punish lil bit
+            sensor = detect_kena_tembok(player.body.position)
+            # kalo kenak kurangi
+            boolval = sensor > 0
+            notboolval = not boolval
+            fitness_recorder['A'] -= boolval * 500
+            fitness_recorder['B'] -= boolval* 500
+            # kalo gak kena kasi gud
+            fitness_recorder['A'] += notboolval * 250
+            fitness_recorder['B'] += notboolval * 250
+
         else:
             game_phase=GamePhase.Normal
 
@@ -635,8 +751,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             # punish
-            fitness_recorder['A'] -= 500
-            fitness_recorder['B'] -= 500
+            fitness_recorder['A'] -= 5000
+            fitness_recorder['B'] -= 5000
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
 
@@ -644,11 +760,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     
     if(asA):
         genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
-        player = team_A[0]
-        opo_goal = goal_b[0]
     else:
-        player = team_B[0]
-        opo_goal = goal_a[0]
         genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
 
     # BALLZ
@@ -657,10 +769,10 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # print('ballfit', fitness_ballz)
 
     # GOALZ
-    fitness_goalz = calculate_ball_goal_fitness(opo_goal, ball)
+    fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)
     genomes[0][1].fitness += fitness_goalz
 
-    print( genomes[0][1].fitness )
+    print(genomes[0][1].fitness)
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -712,8 +824,9 @@ def run(config_file):
                          config_file)
 
     import pickle
-    winner = pickle.load(open('winner.pkl', 'rb'))
+    p = pickle.load(open('pop1.pkl', 'rb'))
     asA=True
+    winner = p.best_genome
     while True:
         asA=not asA
         winner.fitness=0.0
@@ -721,7 +834,6 @@ def run(config_file):
         # break
 
 if __name__ == '__main__':
-    # run(window, WIDTH, HEIGHT)
     # Determine path to configuration file. This path manipulation is
     # here so that the script will run successfully regardless of the
     # current working directory.
