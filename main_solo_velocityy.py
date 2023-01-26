@@ -776,8 +776,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
 
         # update fitness
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
-        if(cur_distance_ball < prev_distance_ball):
-            genomes[0][1].fitness+=1
+        if(cur_distance_ball < prev_distance_ball and abs(cur_distance_ball-prev_distance_ball) > 50):
+            genomes[0][1].fitness+=0.1
+            # print('ngedeketin bola', cur_distance_ball, prev_distance_ball)
             prev_distance_ball=cur_distance_ball
 
         if(game_phase==GamePhase.JUST_GOAL):
