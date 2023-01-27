@@ -236,10 +236,14 @@ def run(window, width, height):
         team_A[0].solve()
         # print(team_A[0].body.velocity)
         # print(team_A[0].body.position)
-        print(calculate_distance(team_A[0].body.position, ball.body.position))
+        # print(calculate_distance(team_A[0].body.position, ball.body.position))
         # print('---')
+        # print(ball.body.velocity)
         space.step(dt)
+        # SCORE_FONT
+        vel = SCORE_FONT.render(f'{ball.body.velocity[0]:0.3f},{ball.body.velocity[1]:0.3f}', 1, (16, 16, 16))
         draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
+        window.blit(vel, (WIDTH/2-85, 500))
         pygame.display.update()
         clock.tick(fps)
 

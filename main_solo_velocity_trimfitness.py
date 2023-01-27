@@ -345,11 +345,16 @@ def check_wall_hit_based_coor(player:Player):
 '''
 return true if above threshold
 ''' 
-def check_velocity(velocity, threshold):
+def check_velocity(velocity, threshold, isEuclid=False):
     vx, vy = velocity
-    if(abs(vx)+abs(vy) > threshold):
-        return True
-    return False
+    if(not isEuclid):
+        if(abs(vx)+abs(vy) > threshold):
+            return True
+        return False
+    else:
+        if(calculate_distance((0,0), velocity) > threshold):
+            return True
+        return False
 
 def check_force(force, threshold):
     fx, fy = force
@@ -696,6 +701,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
     forceQuit=False
     total_iter = 1
     ballEverMove = False
+    # max_ultimate_time_out = 
+    # ultimate_time_out = 
     ronde_time = time.perf_counter()
     while isRun:
         total_iter+=1
@@ -731,14 +738,14 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # clock.tick(fps)
 
         # update fitness
-        bola_is_gerak = check_velocity(ball.body.velocity, 1)
+        bola_is_gerak = check_velocity(ball.body.velocity, 30, True)
         if(bola_is_gerak):
             ballEverMove=True
 
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
         # karang malah menjauh, but cek if bola gerak
         if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
-            if(cur_distance_ball > 100):# kalo di bawah 100 gpp menjauh dikit
+            if(cur_distance_ball > 200):# kalo di bawah 100 gpp menjauh dikit
                 isRun = False
             
         prev_distance_ball = cur_distance_ball
@@ -868,7 +875,7 @@ def eval_genomes(genomes, config):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
             genome_pengegol.append(id_genome)
         
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*2000 + genomes[id_genome][1].nendang*500 - genomes[id_genome][1].own_goal*1000
+        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*2500 + genomes[id_genome][1].nendang*500 - genomes[id_genome][1].own_goal*1250
 
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
@@ -898,7 +905,7 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-63')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-33')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
