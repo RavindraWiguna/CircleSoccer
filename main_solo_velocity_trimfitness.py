@@ -730,7 +730,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 12, True)
+        bola_is_gerak = check_velocity(ball.body.velocity, 7, True)
         
         # CATCH BOLA diem lama
         if(bola_is_gerak):
