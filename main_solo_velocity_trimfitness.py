@@ -350,7 +350,9 @@ def check_wall_hit_based_coor(player:Player):
     # print('s|', isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight,'|', dirX, dirY)
     return judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dirX, dirY)
 
-
+'''
+return true if above threshold
+''' 
 def check_velocity(velocity, threshold):
     vx, vy = velocity
     if(abs(vx)+abs(vy) > threshold):
@@ -539,8 +541,8 @@ def cap_magnitude(val, max_val, min_val):
 def process_output(output, genome, player):
     addVx = output[0] - output[1]
     addVy = output[2] - output[3]
-    addVx*=5
-    addVy*=5 # biar gampangan cpet
+    addVx*=10
+    addVy*=10 # biar gampangan cpet
     player.change_velocity(addVx, addVy)
 
 def solve_players(players):
@@ -792,8 +794,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_recorder['A'] -=1000
             fitness_recorder['B'] -=1000
 
-
-        if (time.perf_counter()-ronde_time) > max_ronde_time:
+        # jika time out dan bola udah gak gerak
+        if (time.perf_counter()-ronde_time) > max_ronde_time and not check_velocity(ball.body.velocity, 1e-3):
             endgame_fitness() # kasi, sapa tau draw beneran
             isRun=False
             # punish
