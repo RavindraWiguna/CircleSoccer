@@ -470,6 +470,11 @@ def make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, id_self
     opponent_goal_tiang_l   = get_position_distance(player.body.position, opo_goal[1].body.position, constant)
     opponent_goal_tiang_r   = get_position_distance(player.body.position, opo_goal[2].body.position, constant)
 
+    # goals dis
+    self_goal_data      = get_position_distance(player.body.position, self_goal[0].body.position, constant)
+    self_goal_tiang_l   = get_position_distance(player.body.position, self_goal[1].body.position, constant)
+    self_goal_tiang_r   = get_position_distance(player.body.position, self_goal[2].body.position, constant)
+
     # ball to goal
     opponent_goal_data_ball      = get_position_distance(ball.body.position, opo_goal[0].body.position, constant)
     opponent_goal_tiang_l_ball   = get_position_distance(ball.body.position, opo_goal[1].body.position, constant)
@@ -479,7 +484,8 @@ def make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, id_self
 
     the_input = [*self_pos_vel, *ball_data, *ball_distance, *wall_data, 
     *opponent_goal_data, *opponent_goal_tiang_l, *opponent_goal_tiang_r,
-    *opponent_goal_data_ball, *opponent_goal_tiang_l_ball, *opponent_goal_tiang_r_ball, bias]
+    *opponent_goal_data_ball, *opponent_goal_tiang_l_ball, *opponent_goal_tiang_r_ball, 
+    *self_goal_data,*self_goal_tiang_l,*self_goal_tiang_r,bias]
     return the_input
 
 '''
@@ -737,7 +743,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 1.0):
+            if(time.perf_counter() - bola_stay_time > 2.0):
                 draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
                 pygame.display.update()
                 max_ronde_time = 0.0
