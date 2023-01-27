@@ -884,7 +884,7 @@ def eval_genomes(genomes, config):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
             genome_pengegol.append(id_genome)
         
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*2500 + genomes[id_genome][1].nendang*500 - genomes[id_genome][1].own_goal*1250
+        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*2500 + genomes[id_genome][1].nendang*500 - genomes[id_genome][1].own_goal*2750
 
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
