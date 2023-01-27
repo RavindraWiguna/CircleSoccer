@@ -35,7 +35,7 @@ last_ball_toucher_id=0
 fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
 ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
-
+iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
 max_touch = 4
 max_drible = 3
@@ -113,14 +113,11 @@ def goal_a_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
     if(game_phase==GamePhase.Normal):
         score_data['B']+=1
-        fitness_recorder['B']+=1200
-        fitness_recorder['A']-=2000
-        # print('A -20| B + 12')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamB(last_ball_toucher_id)):
             # eyo dia ngegolin
-            fitness_recorder[last_ball_toucher_id]+=3000.0
+            fitness_recorder[last_ball_toucher_id]+=1
             # print(last_ball_toucher_id, 'score the goal for tim B dia')
 
     return True
@@ -129,19 +126,15 @@ def goal_b_handler(arbiter, space, data):
     global score_data, game_phase, last_ball_toucher_id, second_last_toucher
     if(game_phase==GamePhase.Normal):
         score_data['A']+=1
-        fitness_recorder['A']+=1200
-        fitness_recorder['B']-=2000
-        # print('A + 12| B -20 ')
         game_phase=GamePhase.JUST_GOAL
 
         if(isTeamA(last_ball_toucher_id)):
-            # bruh tim A ngegol ke B? mantap
-            fitness_recorder[last_ball_toucher_id]+=3000.0
+            fitness_recorder[last_ball_toucher_id]+=1
 
     return True
 
 def ball_touch_handler(collision_type_toucher, arbiter, space, data):
-    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter
+    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch
     
     if(not fitness_recorder.__contains__(collision_type_toucher)):
         fitness_recorder[collision_type_toucher]=0
@@ -151,7 +144,6 @@ def ball_touch_handler(collision_type_toucher, arbiter, space, data):
     solo_touch_ball_counter+=1
     solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
     if(solo_touch_ball_counter < max_touch):
-        # print('reset')
         ronde_time = time.perf_counter()
 
     # check if someone lose the ball
@@ -494,22 +486,6 @@ def initialize_fitness(genome):
     if(genome.fitness == None):
         genome.fitness=0.0
 
-def endgame_fitness():
-    global fitness_recorder, score_data
-    if(score_data['A']>score_data['B']):
-        fitness_recorder['A']+=5000
-        fitness_recorder['B']-=5000
-        # print('A win')
-    elif(score_data['A']<score_data['B']):
-        fitness_recorder['A']-=5000
-        fitness_recorder['B']+=5000
-        # print('B win')
-    else:
-        # draw
-        fitness_recorder['A']+=250
-        fitness_recorder['B']+=250
-        # print('Got Draw')
-
 # FITNESS BALLZkalo mendekati bola
 def calculate_ball_fitness(player, ball):
     final_distance_ball = calculate_distance(player.body.position, ball.body.position)
@@ -525,7 +501,7 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     final_distance_goal = calculate_distance(opo_goal.body.position, ball.body.position)
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_goal/max_fitness
-    fitness *=500
+    fitness *=1000
     return fitness
 
 '''
@@ -553,7 +529,7 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -696,15 +672,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =0.5 # reset
+    max_ronde_time =1.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
     game_phase = GamePhase.Normal
     second_last_toucher=0
     last_ball_toucher_id=0
-    fitness_recorder = {'A':0, 'B':0, 'mendekat':0} # team fitness and individu fitness too
+    fitness_recorder = {'A':0, 'B':0} # team fitness and individu fitness too
     solo_touch_ball_counter=0
+    iter_to_touch=1
 
     # get player, self goal, opo goal, team, etc
     net, genome = team_net[0]
@@ -717,10 +694,12 @@ def game(window, width, height, genomes, config, doRandom, asA):
     prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
 
     forceQuit=False
-    ronde_time = time.perf_counter()
     total_iter = 1
+    ballEverMove = False
+    ronde_time = time.perf_counter()
     while isRun:
         total_iter+=1
+        iter_to_touch+=1
         doVisualize=False
         isHitWall = [0]*24
         for event in pygame.event.get():
@@ -752,11 +731,17 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # clock.tick(fps)
 
         # update fitness
-        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
-        if(cur_distance_ball < prev_distance_ball and abs(cur_distance_ball-prev_distance_ball) > 50):
-            fitness_recorder['mendekat']+=1
-            prev_distance_ball=cur_distance_ball
+        bola_is_gerak = check_velocity(ball.body.velocity, 1)
+        if(bola_is_gerak):
+            ballEverMove=True
 
+        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
+        # karang malah menjauh, but cek if bola gerak
+        if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
+            if(cur_distance_ball > 100):# kalo di bawah 100 gpp menjauh dikit
+                isRun = False
+            
+        prev_distance_ball = cur_distance_ball
         # check termination
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -766,7 +751,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # jika melebihi 3 detik setelah goal (yes pakek if because if training.. uhh..., mengding gpp stpi skip 1.0)
             if(time.perf_counter()-start_time_after_goal >= wait_after_goal):
                 # end ronde
-                endgame_fitness()
                 isRun=False
                 print('get to 1 goal stop')
                 break
@@ -795,8 +779,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_recorder['B'] -=1000
 
         # jika time out dan bola udah gak gerak
-        if (time.perf_counter()-ronde_time) > max_ronde_time and not check_velocity(ball.body.velocity, 1e-3):
-            endgame_fitness() # kasi, sapa tau draw beneran
+        if (time.perf_counter()-ronde_time) > max_ronde_time and not bola_is_gerak:
             isRun=False
             # punish
             fitness_recorder['A'] -= 1000
@@ -806,29 +789,34 @@ def game(window, width, height, genomes, config, doRandom, asA):
     ### === END OF WHILE LOOP === ###
 
     # calculate sisa fitness tim A & B + individu
-    
-    if(asA):
-        genomes[0][1].fitness += fitness_recorder['A'] + fitness_recorder.get(CollisionType.A_P1.value, 0.0)
-    else:
-        genomes[0][1].fitness += fitness_recorder['B'] + fitness_recorder.get(CollisionType.B_P1.value, 0.0)
-
-    # GOALZ
-    fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)
+    # makin deket bola makin bagus
+    fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)*ballEverMove
     genomes[0][1].fitness += fitness_goalz
+    # if(fitness_goalz != 0):
+        # print('---start--')
+        # print('goalz', fitness_goalz)
 
-    # mendekat
-    genomes[0][1].fitness += min(fitness_recorder['mendekat'], 1000)
+    genomes[0][1].nendang += solo_touch_ball_counter
+    # if(genomes[0][1].nendang != 0):
+        # print(genomes[0][1].nendang, 'ndang')
 
+    # bonus time ngegol
     if(game_phase == GamePhase.JUST_GOAL):
         if(asA and score_data['A'] > score_data['B']):
             fitness_time_goal = (1/total_iter)*10000
+            genomes[0][1].ngegol += 1
+            # print('a ngegol')
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*10000
+            genomes[0][1].ngegol += 1
+            # print('b ngegol')
         else:
             fitness_time_goal=0.0
-        print(fitness_time_goal, 'bonus time')
+            genomes[0][1].own_goal +=1
+            # print('gol bunuh diri')
+        # print('---end---')
         genomes[0][1].fitness += fitness_time_goal
-
+    
     # remove object from space? or just remove space
     for obj in space.bodies:
         space.remove(obj)
@@ -836,7 +824,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
         space.remove(obj)
     for obj in space.constraints:
         space.remove(obj)
-    # print('done', total_ronde)
     # pygame.quit()
     return forceQuit
 
@@ -864,11 +851,36 @@ def make_teams(genomes):
 def eval_genomes(genomes, config):
     set_fitness_val(genomes)
     total_repeat = 3
+    genome_pengegol = []
+    best_fitness = 0.0
+    best_id = 0
+    total_fitness = 0.0
     for id_genome in range(len(genomes)):
+        genomes[id_genome][1].ngegol = 0
+        genomes[id_genome][1].nendang = 0
+        genomes[id_genome][1].own_goal = 0
         for _ in range(total_repeat):
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
             if(fq):break
+        
+        if(genomes[id_genome][1].ngegol > 0):
+            print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
+            genome_pengegol.append(id_genome)
+        
+        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*2000 + genomes[id_genome][1].nendang*500 - genomes[id_genome][1].own_goal*1000
+
+        if(best_fitness < genomes[id_genome][1].fitness):
+            best_id = id_genome
+            best_fitness = genomes[id_genome][1].fitness
+
+        total_fitness += genomes[id_genome][1].fitness
+
+    # # fix nilai
+    print('best:', best_fitness)
+    print('stat:')
+    bgenome = genomes[best_id][1]
+    print('gol:', bgenome.ngegol, '|ndang:', bgenome.nendang)      
 
 
 
@@ -886,7 +898,7 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-508')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-63')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
