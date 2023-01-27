@@ -1,6 +1,6 @@
 [NEAT]
-fitness_criterion     = mean
-fitness_threshold     = 18000
+fitness_criterion     = max
+fitness_threshold     = 90000
 pop_size              = 1000
 reset_on_extinction   = False
 
