@@ -749,9 +749,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 max_ronde_time = 0.0
                 # print('0.5s in real time diem', iter_to_touch)
 
-
-                
-
         if(doVisualize):
             draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
             pygame.display.update()
@@ -817,8 +814,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
     fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)*(solo_touch_ball_counter > 0)
     genomes[0][1].fitness += fitness_goalz
     # if(fitness_goalz != 0):
-        # print('---start--')
-        # print('goalz', fitness_goalz)
+    # print('---start--')
+    # print('goalz', fitness_goalz)
 
     genomes[0][1].nendang += solo_touch_ball_counter
     # if(genomes[0][1].nendang != 0):
@@ -827,13 +824,15 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # bonus time ngegol
     if(game_phase == GamePhase.JUST_GOAL):
         if(asA and score_data['A'] > score_data['B']):
-            fitness_time_goal = (1/total_iter)*10000
+            fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
             # print('a ngegol')
+            # print(fitness_time_goal)
         elif(not asA and score_data['B'] > score_data['A']):
-            fitness_time_goal = (1/total_iter)*10000
+            fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
             # print('b ngegol')
+            # print(fitness_time_goal)
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
@@ -901,7 +900,7 @@ def eval_genomes(genomes, config):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
             genome_pengegol.append(id_genome)
         
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*2500 - genomes[id_genome][1].own_goal*10000
+        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*3500 - genomes[id_genome][1].own_goal*10000
 
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
@@ -913,7 +912,7 @@ def eval_genomes(genomes, config):
     print('best:', best_fitness)
     print('stat:')
     bgenome = genomes[best_id][1]
-    print('gol:', bgenome.ngegol, '|ndang:', bgenome.nendang)      
+    print('gol:', bgenome.ngegol, '|og:', bgenome.own_goal)      
 
 
 
@@ -924,14 +923,14 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
+    p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
 
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-72')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-72')
     p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
