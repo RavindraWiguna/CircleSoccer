@@ -1,15 +1,14 @@
-total_pop = 50
-total_match_per_pair=5
+def calculate_final_vel(curVel, newVel, axis):
+    # cek apa mereka selaras
+    curVel_isPositive = curVel > 0.0
+    newVel_isPositive = newVel > 0.0
+    if(curVel_isPositive == newVel_isPositive):
+        print('ues')
+    else:
+        print('no')
 
-score_per_goal=30
-score_win = 100
-score_lose=-100
-rate_goal = 0.5
-min_full_score = score_win+score_per_goal+1
-max_bad_score = score_lose - 1
 
-total_pair = total_pop*(total_pop-1)/2
-total_game = total_pair*total_match_per_pair
-
-fitness = total_game*rate_goal*min_full_score + (1-rate_goal)*max_bad_score*total_game
-print(fitness)
+calculate_final_vel(1.0, 2.0, 0) # should yes
+calculate_final_vel(2.0, -3.0, 1) # shuold no
+calculate_final_vel(-5.0, 4.0, 0) # should no
+calculate_final_vel(-6.0, -7.0, 1) # should yes

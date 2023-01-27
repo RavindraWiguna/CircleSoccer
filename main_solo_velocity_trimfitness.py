@@ -464,53 +464,12 @@ def cap_magnitude(val, max_val, min_val):
 
 # get vx vy
 def process_output(output, genome, player):
-    button = np.argmax(output)
+    addVx = output[0] - output[1]
+    addVy = output[2] - output[3]
 
-    '''
-    0 = idle
-    1 = up
-    2 = down
-    3 = left
-    4 = right
-    5 = timur laur
-    6 = tenggara
-    7 = barat daya
-    8 = barat laut
-    '''
-    if(button==0):
-        return # idle
-    
-    if(button==1):
-        player.move_up_vel()
-        return
-
-    if(button==2):
-        player.move_down_vel()
-        return
-
-    if(button==3):
-        player.move_left_vel()
-        return
-
-    if(button==4):
-        player.move_right_vel()
-        return
-    
-    if(button==5):
-        player.move_timur_laut_vel()
-        return
-
-    if(button==6):
-        player.move_tenggara_vel()
-        return
-
-    if(button==7):
-        player.move_barat_daya_vel()
-        return
-
-    if(button==8):
-        player.move_barat_laut_vel()
-        return
+    addVx *= player.VEL_MAG # multiply biar gampangan network belajar
+    addVy *= player.VEL_MAG
+    player.change_velocity(addVx, addVy)
 
 def solve_players(players):
     for player in players:
@@ -657,6 +616,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     net, genome = team_net[0]
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
 
+    # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
+    prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
+
     forceQuit=False
     ronde_time = time.perf_counter()
     while isRun:
@@ -693,6 +655,12 @@ def game(window, width, height, genomes, config, doRandom, asA):
             draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
             pygame.display.update()
             # clock.tick(fps)
+
+        # update fitness
+        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
+        if(cur_distance_ball < prev_distance_ball and abs(cur_distance_ball-prev_distance_ball) > 50):
+            fitness_recorder['mendekat']+=1
+            prev_distance_ball=cur_distance_ball
 
         # check termination
         if(game_phase==GamePhase.JUST_GOAL):
@@ -753,6 +721,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # GOALZ
     fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)
     genomes[0][1].fitness += fitness_goalz
+
+    # mendekat
+    genomes[0][1].fitness += min(fitness_recorder['mendekat'], 1000)
 
     # remove object from space? or just remove space
     for obj in space.bodies:

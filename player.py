@@ -12,6 +12,11 @@ class Player(CircleObject):
     MAX_ACC = 100 # since m*a = F, i guess call this acc, i want bigger mass, faster stop
     PIVOT_MAX_FORCE = MASS*MAX_ACC # bigger = faster stop
     
+    '''
+    =================
+     Diskrit param
+    =================
+    '''
     # TOP SPEED
     TOP_SPEED_POSITIVE = 512
     TOP_SPEED_NEGATIVE = -TOP_SPEED_POSITIVE
@@ -27,6 +32,15 @@ class Player(CircleObject):
     TOLERANCE_POSITIVE = 1
     TOLERANCE_NEGATIVE = -TOLERANCE_POSITIVE
     
+
+    '''
+    ===================
+    Omniparam
+    ===================
+    '''
+    # tolerance magnitude untuk dikonsider diem
+    TOL_MAG = 1e-4
+
     def __init__(self, space, position, color) -> None:
         super().__init__(space, position, self.RADIUS, self.MASS, self.ELASTICITY, self.PIVOT_MAX_FORCE, color)
         # 1 mean pos, 0 mean no move, -1 mean neg
@@ -76,44 +90,44 @@ class Player(CircleObject):
     =====================
     '''
 
-    def move_positive(self, val, axis):
+    def calc_vel_positive(self, vel, axis):
         # cek apa sedang ke arah berlawanan
-        if(val < self.TOLERANCE_NEGATIVE):
-            val /=self.BRAKE_DIV
+        if(vel < self.TOLERANCE_NEGATIVE):
+            vel /=self.BRAKE_DIV
         else:
-            val += self.VEL_MAG
+            vel += self.VEL_MAG
             self.direction[axis]=1
-            val = min(val, self.TOP_SPEED_POSITIVE)
-        return val
+            vel = min(vel, self.TOP_SPEED_POSITIVE)
+        return vel
 
-    def move_negative(self, val, axis):
+    def calc_vel_negative(self, vel, axis):
         # cek apa sedang ke arah berlawanan
-        if(val > self.TOLERANCE_POSITIVE):
-            val /=self.BRAKE_DIV
+        if(vel > self.TOLERANCE_POSITIVE):
+            vel /=self.BRAKE_DIV
         else:
-            val -= self.VEL_MAG
+            vel -= self.VEL_MAG
             self.direction[axis]=-1
-            val = max(val, self.TOP_SPEED_NEGATIVE)
-        return val
+            vel = max(vel, self.TOP_SPEED_NEGATIVE)
+        return vel
 
     def move_up_vel(self):
         Vx, Vy = self.body.velocity
-        Vy = self.move_negative(Vy, 1)
+        Vy = self.calc_vel_negative(Vy, 1)
         self.body._set_velocity((Vx, Vy))
     
     def move_down_vel(self):
         Vx, Vy = self.body.velocity
-        Vy = self.move_positive(Vy, 1)
+        Vy = self.calc_vel_positive(Vy, 1)
         self.body._set_velocity((Vx, Vy))
     
     def move_left_vel(self):
         Vx, Vy = self.body.velocity
-        Vx = self.move_negative(Vx, 0)
+        Vx = self.calc_vel_negative(Vx, 0)
         self.body._set_velocity((Vx, Vy))
     
     def move_right_vel(self):
         Vx, Vy = self.body.velocity
-        Vx = self.move_positive(Vx, 0)
+        Vx = self.calc_vel_positive(Vx, 0)
         self.body._set_velocity((Vx, Vy))
     
     def move_timur_laut_vel(self):
@@ -152,5 +166,63 @@ class Player(CircleObject):
 
         # set velocity
         self.body._set_velocity((Vx, Vy))
+    
+    '''
+    ==========================
+    Semi Omnipotent Velocity
+    ==========================
+    '''
+    # def calculate_final_vel(self, curVel, addVel, axis):
+    #     # cek apa mereka selaras
+    #     curVel_isPositive = curVel > 0.0
+    #     addVel_isPositive = addVel > 0.0
+    #     if(curVel_isPositive == addVel_isPositive):
+    #         # ok selaras
+    #         return curVel
+    #     else:
+    #         print('no')
+    
+    # def control_velocity(self, Vx, Vy):
+    #     # kalau dibawah threshold tolerance gerak
+    #     if(abs(Vx) < self.TOL_MAG):
+    #         Vx = 0.0
+    #         self.direction[0]=0
+    #     else:
+    #         Vx = self.move_velocity(Vx, 0)
+
+    #     if(abs(Vy) < self.TOL_MAG):
+    #         Vy = 0.0
+    #         self.direction[1]=0
+    #     else:
+    #         Vy = self.move_velocity
+
+    # ganti arah 1 axis
+    def change_direction(self, vel, axis):
+        if(vel==0.0):
+            self.direction[axis]=0
+        elif(vel > 0.0):
+            self.direction[axis]=1
+        else:
+            self.direction[axis]=-1
+    
+    # ganti arah semua axis
+    def update_direction(self):
+        Vx, Vy = self.body.velocity
+        self.change_direction(Vx, 0)
+        self.change_direction(Vy, 1)
+
+    # simpler approach, just add the vel to this one
+    def change_velocity(self, Vx, Vy):
+        curVx, curVy = self.body.velocity
+        curVx += Vx
+        curVx = max(self.TOP_SPEED_NEGATIVE, min(curVx, self.TOP_SPEED_POSITIVE))
+
+        # uu curvyy~~~
+        curVy += Vy
+        curVy = max(self.TOP_SPEED_NEGATIVE, min(curVy, self.TOP_SPEED_POSITIVE))
+        self.body._set_velocity((curVx, curVy))
+
+        self.update_direction()
+        
 
 

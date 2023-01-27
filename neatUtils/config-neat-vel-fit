@@ -8,7 +8,7 @@ reset_on_extinction   = False
 # node activation options
 activation_default      = relu
 activation_mutate_rate  = 0.1
-activation_options      = abs gauss hat identity relu elu lelu sigmoid softplus tanh binstep swish mish
+activation_options      = abs identity relu elu lelu softplus tanh binstep swish mish
 
 # node aggregation options
 aggregation_default     = sum
@@ -47,8 +47,8 @@ node_delete_prob        = 0.2
 num_hidden              = 0
 # 24 + 1 bias
 num_inputs              = 25
-# 9 output is +x, 8 arah mata angin + idle
-num_outputs             = 9
+# back to vel +x -x +y -y
+num_outputs             = 4
 
 # node response options
 response_init_mean      = 1.0
