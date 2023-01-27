@@ -39,7 +39,7 @@ class Player(CircleObject):
     ===================
     '''
     # tolerance magnitude untuk dikonsider diem
-    TOL_MAG = 1e-4
+    TOL_MAG = 1e0
 
     def __init__(self, space, position, color) -> None:
         super().__init__(space, position, self.RADIUS, self.MASS, self.ELASTICITY, self.PIVOT_MAX_FORCE, color)

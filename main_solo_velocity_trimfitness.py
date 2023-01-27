@@ -299,30 +299,21 @@ def detect_kena_tembok(position):
     
     return sensor
 
-# player id udah include sama tim, 0-5
-def check_hitting_wall(player_id, player:Player):
-    global isHitWall
-    dirX, dirY = player.direction
-    topoff, botoff, leftoff, rightoff = 0,6,12,18
-
+def judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dirX, dirY):
     # top wall only
-    isNabrakTop = isHitWall[topoff+player_id]==1 and dirY==-1
     if(isNabrakTop and dirX==0):
         # nyentuh dan nabrak but gak gerak kiri kanan
         return True
     
     # bottom wall only
-    isNabrakBottom = isHitWall[botoff+player_id]==1 and dirY==1
     if(isNabrakBottom and dirX==0):
         return True
 
     # left wall only
-    isNabrakLeft = isHitWall[leftoff+player_id]==1 and dirX == -1
     if(isNabrakLeft and dirY==0):
         return True
 
     # right wall only
-    isNabrakRight = isHitWall[rightoff+player_id]==1 and dirX ==1
     if(isNabrakRight and dirY==0):
         return True
     
@@ -332,6 +323,33 @@ def check_hitting_wall(player_id, player:Player):
 
     # gak semua
     return False
+
+# player id udah include sama tim, 0-5
+def check_wall_hit_based_collision(player_id, player:Player):
+    global isHitWall
+    topoff, botoff, leftoff, rightoff = 0,6,12,18
+    dirX, dirY = player.direction
+    isNabrakTop = isHitWall[topoff+player_id]==1 and (dirY==-1)
+    isNabrakBottom = isHitWall[botoff+player_id]==1 and( dirY==1)
+    isNabrakLeft = isHitWall[leftoff+player_id]==1 and (dirX == -1)
+    isNabrakRight = isHitWall[rightoff+player_id]==1 and (dirX ==1)
+    # print('c|', isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight,'|', dirX, dirY,'|', player.body.velocity)
+    return judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dirX, dirY)
+
+
+# make sur to check theez nut, imean coor
+def check_wall_hit_based_coor(player:Player):
+    bit_top, bit_bottom, bit_left, bit_right = 1,2,4,8
+    position = player.body.position
+    dirX, dirY = player.direction
+    sensor = detect_kena_tembok(position)
+    isNabrakTop = (sensor & bit_top) and( dirY==-1)
+    isNabrakBottom = (sensor & bit_bottom) and (dirY==1)
+    isNabrakLeft = (sensor & bit_left) and (dirX == -1)
+    isNabrakRight = (sensor & bit_right) and (dirX ==1)
+    # print('s|', isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight,'|', dirX, dirY)
+    return judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dirX, dirY)
+
 
 def check_velocity(velocity, threshold):
     vx, vy = velocity
@@ -351,12 +369,14 @@ def checkAllStandStill(players, ball, doWallCheck):
     existMovement=False
     vel_threshold = 1e-6
 
-    for obj, index in players:            
+    for index, obj in players:            
         existMovement = check_velocity(obj.body.velocity, vel_threshold)
         if(existMovement):
             # cek apa gerak tapi nabrak tembok
-            isHittingWall = check_hitting_wall(index, obj)
-            if(isHittingWall):
+            isHittingWall_cor = check_wall_hit_based_coor(obj)
+            isHittingWall_col = check_wall_hit_based_collision(index, obj)
+            # isHittingWall = check_wall_hit_based_collision(index, obj)
+            if(isHittingWall_cor or isHittingWall_col ):
                 existMovement=False
 
         # kalau lewat 2 2 nya ok ada gerakan        
@@ -519,6 +539,8 @@ def cap_magnitude(val, max_val, min_val):
 def process_output(output, genome, player):
     addVx = output[0] - output[1]
     addVy = output[2] - output[3]
+    addVx*=5
+    addVy*=5 # biar gampangan cpet
     player.change_velocity(addVx, addVy)
 
 def solve_players(players):
@@ -672,7 +694,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =1.0 # reset
+    max_ronde_time =0.5 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -687,14 +709,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
     
     player_index = 0 if asA else 3
-    player_cek = [[player, player_index]]
+    player_cek = [[player_index, player]]
 
     # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
     prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
 
     forceQuit=False
     ronde_time = time.perf_counter()
+    total_iter = 1
     while isRun:
+        total_iter+=1
         doVisualize=False
         isHitWall = [0]*24
         for event in pygame.event.get():
@@ -792,6 +816,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
 
     # mendekat
     genomes[0][1].fitness += min(fitness_recorder['mendekat'], 1000)
+
+    if(game_phase == GamePhase.JUST_GOAL):
+        if(asA and score_data['A'] > score_data['B']):
+            fitness_time_goal = (1/total_iter)*10000
+        elif(not asA and score_data['B'] > score_data['A']):
+            fitness_time_goal = (1/total_iter)*10000
+        else:
+            fitness_time_goal=0.0
+        print(fitness_time_goal, 'bonus time')
+        genomes[0][1].fitness += fitness_time_goal
 
     # remove object from space? or just remove space
     for obj in space.bodies:
