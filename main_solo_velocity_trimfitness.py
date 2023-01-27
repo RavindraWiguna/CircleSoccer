@@ -39,6 +39,9 @@ solo_touch_ball_counter=0
 multiplier_fitness_iter_touch = 500
 max_touch = 4
 max_drible = 3
+# list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
+# males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
+isHitWall = [0]*24
 
 ### === PYMUNK SETUP === ###
 # make space where we will simulate
@@ -53,11 +56,15 @@ def draw_score(window, a, b):
     score_text = SCORE_FONT.render(f'{a:02d} : {b:02d}', 1, (16, 16, 16))
     window.blit(score_text, (WIDTH/2-85, 10))
 
-def draw(window, objs, score_data):
+def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=False):
     window.blit(bg, (0,0))
     draw_score(window, score_data['A'], score_data['B'])
-    for obj in objs:
-        obj.draw(window)
+    
+    if(isDebug):
+        space.debug_draw(drawing_options)
+    else:
+        for obj in objs:
+            obj.draw(window)
 
 
 ### === GAME SPECIFIC FUNCTIONS === ###
@@ -66,20 +73,21 @@ def create_boundaries(space, width, height, bwidth):
     # format: cx,cy, w,h
     mid_width = width/2
     mid_height = height/2
+    offset = bwidth/3
     rects = [
         # top wall
-        [(mid_width, bwidth/2), (width, bwidth)],
+        [(mid_width, -offset), (width, bwidth), CollisionType.WALL_TOP.value],
         
         # bottom wall
-        [(mid_width, height-bwidth/2), (width, bwidth)],
+        [(mid_width, height+offset), (width, bwidth), CollisionType.WALL_BOTTOM.value],
 
         # left wall
-        [(bwidth/2, mid_height), (bwidth, height)],
+        [(-offset, mid_height), (bwidth, height), CollisionType.WALL_LEFT.value],
 
         # right wall
-        [(width-bwidth/2, mid_height), (bwidth, height)]
+        [(width+offset, mid_height), (bwidth, height), CollisionType.WALL_RIGHT.value]
     ]
-    for pos, size in rects:
+    for pos, size, coltype in rects:
         body = pymunk.Body(body_type=pymunk.Body.STATIC)
         body.position = pos
 
@@ -88,6 +96,7 @@ def create_boundaries(space, width, height, bwidth):
         shape.friction = 0.5
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
+        shape.collision_type=coltype
 
 '''
 =====================
@@ -131,14 +140,14 @@ def goal_b_handler(arbiter, space, data):
 
     return True
 
-def ball_touch_handler(id_toucher, arbiter, space, data):
+def ball_touch_handler(collision_type_toucher, arbiter, space, data):
     global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter
     
-    if(not fitness_recorder.__contains__(id_toucher)):
-        fitness_recorder[id_toucher]=0
+    if(not fitness_recorder.__contains__(collision_type_toucher)):
+        fitness_recorder[collision_type_toucher]=0
     
-    # print(id_toucher, 'touch the ball')
-    # fitness_recorder[id_toucher]
+    # print(collision_type_toucher, 'touch the ball')
+    # fitness_recorder[collision_type_toucher]
     solo_touch_ball_counter+=1
     solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
     if(solo_touch_ball_counter < max_touch):
@@ -151,23 +160,23 @@ def ball_touch_handler(id_toucher, arbiter, space, data):
         pass
 
     # ok semua ke cek, now return
-    if(last_ball_toucher_id==id_toucher):
+    if(last_ball_toucher_id==collision_type_toucher):
         # ga ada beda, dari pada second sama last sama
         return True
     
     # ok beda orang, ganti
     second_last_toucher=last_ball_toucher_id
-    last_ball_toucher_id=id_toucher
+    last_ball_toucher_id=collision_type_toucher
     return True
 
 # make partial func
-team_a1_handler = partial(ball_touch_handler, CollisionType.A_P1.value)
-team_a2_handler = partial(ball_touch_handler, CollisionType.A_P2.value)
-team_a3_handler = partial(ball_touch_handler, CollisionType.A_P3.value)
+team_a1_ball_handler = partial(ball_touch_handler, CollisionType.A_P1.value)
+team_a2_ball_handler = partial(ball_touch_handler, CollisionType.A_P2.value)
+team_a3_ball_handler = partial(ball_touch_handler, CollisionType.A_P3.value)
 
-team_b1_handler = partial(ball_touch_handler, CollisionType.B_P1.value)
-team_b2_handler = partial(ball_touch_handler, CollisionType.B_P2.value)
-team_b3_handler = partial(ball_touch_handler, CollisionType.B_P3.value)
+team_b1_ball_handler = partial(ball_touch_handler, CollisionType.B_P1.value)
+team_b2_ball_handler = partial(ball_touch_handler, CollisionType.B_P2.value)
+team_b3_ball_handler = partial(ball_touch_handler, CollisionType.B_P3.value)
 
 '''
 ==============
@@ -216,37 +225,76 @@ def out_of_bound_check(objs, width, height):
         if(px < -10 or py < -10 or px > width or py > height):
             # endgame_fitness() keluar juga ga dikasi reward
             existOutOfBound=True
+            print(obj.body.velocity)
             print('out of bound with tolerance')
             break
     
     return existOutOfBound
 
-# kalau tembok atas 1, bawah = 2, kiri = 4, kanan = 8, gak kena = 0 (semua bit mati) 
-# ( tapi ya gak mungkin semua bit nyala, atas bawah nyala impos)
-def detect_kena_tembok(position):
-    '''
-    bahaya kalo ganti width length but for now gud
-    '''
-    x, y = position
+def wall_collision_handler(offset_id_wall, offset_id_toucher, arbiter, space, data):
+    global isHitWall
+    isHitWall[offset_id_wall+offset_id_toucher]=1
+    return True
+
+# make partial func for wall
+top_wall_hit_handler    = partial(wall_collision_handler, 0)
+bottom_wall_hit_handler = partial(wall_collision_handler, 6)
+left_wall_hit_handler   = partial(wall_collision_handler, 12)
+right_wall_hit_handler  = partial(wall_collision_handler, 18)
+
+# make partial func for collision each player
+team_a1_twall_handler = partial(top_wall_hit_handler, 0)
+team_a2_twall_handler = partial(top_wall_hit_handler, 1)
+team_a3_twall_handler = partial(top_wall_hit_handler, 2)
+team_b1_twall_handler = partial(top_wall_hit_handler, 3)
+team_b2_twall_handler = partial(top_wall_hit_handler, 4)
+team_b3_twall_handler = partial(top_wall_hit_handler, 5)
+
+team_a1_bwall_handler = partial(bottom_wall_hit_handler, 0)
+team_a2_bwall_handler = partial(bottom_wall_hit_handler, 1)
+team_a3_bwall_handler = partial(bottom_wall_hit_handler, 2)
+team_b1_bwall_handler = partial(bottom_wall_hit_handler, 3)
+team_b2_bwall_handler = partial(bottom_wall_hit_handler, 4)
+team_b3_bwall_handler = partial(bottom_wall_hit_handler, 5)
+
+team_a1_lwall_handler = partial(left_wall_hit_handler, 0)
+team_a2_lwall_handler = partial(left_wall_hit_handler, 1)
+team_a3_lwall_handler = partial(left_wall_hit_handler, 2)
+team_b1_lwall_handler = partial(left_wall_hit_handler, 3)
+team_b2_lwall_handler = partial(left_wall_hit_handler, 4)
+team_b3_lwall_handler = partial(left_wall_hit_handler, 5)
+
+team_a1_rwall_handler = partial(right_wall_hit_handler, 0)
+team_a2_rwall_handler = partial(right_wall_hit_handler, 1)
+team_a3_rwall_handler = partial(right_wall_hit_handler, 2)
+team_b1_rwall_handler = partial(right_wall_hit_handler, 3)
+team_b2_rwall_handler = partial(right_wall_hit_handler, 4)
+team_b3_rwall_handler = partial(right_wall_hit_handler, 5)
+
+# player id udah include sama tim, 0-5
+def check_hitting_wall(player_id, player:Player):
+    global isHitWall
+    dirX, dirY = player.direction
+    topoff, botoff, leftoff, rightoff = 0,6,12,18
+
+    # top wall
+    if(isHitWall[topoff+player_id]==1 and dirY==-1 and dirX==0):
+        # nyentuh dan nabrak
+        return True
     
-    sensor = 0
-    # tembok ci- i mean atas-bawah:
-    if(y < 30.0):
-        # atas
-        sensor +=1
-    elif(y > 730):
-        # bawah
-        sensor +=2
+    # bottom wall
+    if(isHitWall[botoff+player_id]==1 and dirY==1 and dirX==0):
+        return True
+
+    # left wall
+    if(isHitWall[leftoff+player_id]==1 and dirY==0 and dirX==-1):
+        return True
+
+    # right wall
+    if(isHitWall[rightoff+player_id]==1 and dirY==0 and dirX==1):
+        return True
     
-    # tembok kiri kanan
-    if(x < 77):
-        # di kiri gawang or tembok kiri
-        sensor += 4
-    elif(x > 1196):
-        # kanan, gawang or tembok kanan
-        sensor +=8
-    
-    return sensor
+    return False
 
 def check_velocity(velocity, threshold):
     vx, vy = velocity
@@ -264,50 +312,18 @@ def check_force(force, threshold):
 
 def checkAllStandStill(players, ball, doWallCheck):
     existMovement=False
-    vel_threshold = 1e-7
+    vel_threshold = 1e-6
 
-    bit_top = 1
-    bit_bottom = 2
-    bit_left = 4
-    bit_right=8
+    for obj, index in players:            
+        existMovement = check_velocity(obj.body.velocity, vel_threshold)
+        if(existMovement):
+            # cek apa gerak tapi nabrak tembok
+            isHittingWall = check_hitting_wall(index, obj)
+            if(isHittingWall):
+                existMovement=False
 
-    for obj in players:
-        # sensor tell kena tembok or no using bit stuff
-        sensor=0
-        if(doWallCheck):
-            sensor=detect_kena_tembok(obj.body.position)
-        
-        # gak kena tembok atau gak dicek
-        if(sensor==0):
-            # print('no nabrak')
-            # assume gak kena tembok, then check
-            
-            existMovement = check_velocity(obj.body.velocity, vel_threshold)
-            if(existMovement):break
-
-        else:
-            # print('nabrak')
-            # sensor != 0, berarti kenak at least 1 tembok
-            
-            # cek arah player kalo nabrak tembok
-            dirX, dirY = obj.direction
-            
-            # cek nabrak atas # jika x gerak ke manapun atau y turun
-            if((sensor & bit_top) and (dirX != 0 or dirY == 1)):
-                existMovement=True
-                break
-
-            if((sensor & bit_bottom) and (dirX != 0 or dirY == -1)):
-                existMovement=True
-                break
-
-            if((sensor & bit_left) and (dirX == 1 or dirY != 0)):
-                existMovement=True
-                break
-
-            if((sensor & bit_bottom) and (dirX != 0 or dirY == -1)):
-                existMovement=True
-                break
+        # kalau lewat 2 2 nya ok ada gerakan        
+        if(existMovement):break
     
     ### END OF FOR LOOP ###
 
@@ -466,9 +482,6 @@ def cap_magnitude(val, max_val, min_val):
 def process_output(output, genome, player):
     addVx = output[0] - output[1]
     addVy = output[2] - output[3]
-
-    addVx *= player.VEL_MAG # multiply biar gampangan network belajar
-    addVy *= player.VEL_MAG
     player.change_velocity(addVx, addVy)
 
 def solve_players(players):
@@ -488,7 +501,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     isRun = True
     clock = pygame.time.Clock()
     fps = 120
-    step=1
+    step=5
     dt = 1/(step*fps)
 
     '''
@@ -497,13 +510,14 @@ def game(window, width, height, genomes, config, doRandom, asA):
     ======================================
     '''
     # BORDER FOR BOUNCE
-    wall_width=4
+    wall_width=50
     create_boundaries(space, width, height, wall_width)
+    wall_width=4
     
     # GAME'S BALL
     ball = Ball(space, (width/2, height/2))
     ball.shape.collision_type=CollisionType.BALL.value
-    
+     
     # GOALS variable
     height_goal = 175
     width_goal=6
@@ -551,9 +565,19 @@ def game(window, width, height, genomes, config, doRandom, asA):
     ]
     team_A[0].shape.collision_type=CollisionType.A_P1.value
 
-    ball_sensor_A1          = space.add_collision_handler(ball.shape.collision_type, team_A[0].shape.collision_type)
-    ball_sensor_A1.begin    = team_a1_handler
+    team_A_sensors = [
+        # collision type, function
+        [[ball.shape.collision_type, team_a1_ball_handler], [CollisionType.WALL_TOP.value, team_a1_twall_handler], 
+        [CollisionType.WALL_BOTTOM.value, team_a1_bwall_handler], [CollisionType.WALL_LEFT.value, team_a1_lwall_handler],
+        [CollisionType.WALL_RIGHT.value, team_a1_rwall_handler]],
+    ]
+    # add collision handler to space
+    for i, player_collision_stuff in enumerate(team_A_sensors):
+        for coltype, function in player_collision_stuff:
+            temporary = space.add_collision_handler(coltype, team_A[i].shape.collision_type)
+            temporary.begin = function
 
+    ### === TEAM B === ###
     COLOR_B = (0, 100, 200, 100)
     team_B = [
         # keeper (ceritanya)
@@ -561,8 +585,17 @@ def game(window, width, height, genomes, config, doRandom, asA):
     ]
     team_B[0].shape.collision_type=CollisionType.B_P1.value
 
-    ball_sensor_B1          = space.add_collision_handler(ball.shape.collision_type, team_B[0].shape.collision_type)
-    ball_sensor_B1.begin    = team_b1_handler
+    team_B_sensors = [
+        # collision type, function
+        [[ball.shape.collision_type, team_b1_ball_handler], [CollisionType.WALL_TOP.value, team_b1_twall_handler], 
+        [CollisionType.WALL_BOTTOM.value, team_b1_bwall_handler], [CollisionType.WALL_LEFT.value, team_b1_lwall_handler],
+        [CollisionType.WALL_RIGHT.value, team_b1_rwall_handler]],
+    ]
+
+    for i, player_collision_stuff in enumerate(team_B_sensors):
+        for coltype, function in player_collision_stuff:
+            temporary = space.add_collision_handler(coltype, team_B[i].shape.collision_type)
+            temporary.begin = function
 
     if(doRandom):
         objs = [*team_A, *team_B]
@@ -602,7 +635,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time = 1.0 # reset
+    max_ronde_time =3.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -615,6 +648,10 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # get player, self goal, opo goal, team, etc
     net, genome = team_net[0]
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
+    player_solve = [player]
+    
+    index = 0 if asA else 3
+    player_cek = [[player, index]]
 
     # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
     prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
@@ -641,18 +678,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # output probability action
         output = net.activate(the_input)
         process_output(output, genome, player)
-
-        # cek apakah ada movement (sebelum step, karena step ngereset force)
-        player_cek = [player]
-        existMovement=checkAllStandStill(player_cek, ball, True)
         
         # IMPORTANT! solve the player movement
         solve_players(player_cek)
 
         # update world and graphics
-        space.step(dt)
+        for _ in range(step):
+            space.step(dt)
+        
         if(doVisualize):
-            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)
+            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, True)
             pygame.display.update()
             # clock.tick(fps)
 
@@ -677,6 +712,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 break
         
         # same, check termination
+        existMovement=checkAllStandStill(player_cek, ball, True)
         if(not existMovement and game_phase != GamePhase.KICKOFF):
             # lsg break
             # endgame_fitness() no move ga dikasi reward
@@ -690,15 +726,13 @@ def game(window, width, height, genomes, config, doRandom, asA):
             game_phase=GamePhase.Normal
 
         # cek apakah out o bound
-        objs = [ball]
-        if(asA):
-            objs.append(team_A[0])
-        else:
-            objs.append(team_B[0])
-        
+        objs = [ball, player]
         isOutOfBound = out_of_bound_check(objs, width, height)
         if(isOutOfBound):
             isRun=False
+            # punish
+            fitness_recorder['A'] -=1000
+            fitness_recorder['B'] -=1000
 
 
         if (time.perf_counter()-ronde_time) > max_ronde_time:
@@ -707,6 +741,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish
             fitness_recorder['A'] -= 1000
             fitness_recorder['B'] -= 1000
+            print(player.direction, player.body.position)
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
     ### === END OF WHILE LOOP === ###

@@ -231,8 +231,8 @@ def run(window, width, height):
         # for _ in range(step):
         # print(team_A[0].direction)
         team_A[0].solve()
-        # print(team_A[0].body.velocity)
-        print(team_A[0].body.position)
+        print(team_A[0].body.velocity)
+        # print(team_A[0].body.position)
         # print('---')
         space.step(dt)
         draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)

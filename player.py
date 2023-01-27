@@ -216,7 +216,6 @@ class Player(CircleObject):
         curVx, curVy = self.body.velocity
         curVx += Vx
         curVx = max(self.TOP_SPEED_NEGATIVE, min(curVx, self.TOP_SPEED_POSITIVE))
-
         # uu curvyy~~~
         curVy += Vy
         curVy = max(self.TOP_SPEED_NEGATIVE, min(curVy, self.TOP_SPEED_POSITIVE))
