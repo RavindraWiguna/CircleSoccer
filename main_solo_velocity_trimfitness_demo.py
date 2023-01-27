@@ -677,7 +677,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =2.5 # reset
+    max_ronde_time =60.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -707,7 +707,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
     while isRun:
         total_iter+=1
         iter_to_touch+=1
-        doVisualize=False
         isHitWall = [0]*24
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
@@ -715,10 +714,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 isRun=False
                 print('force quit')
                 break
-        
-        keys = pygame.key.get_pressed()
-        if(keys[pygame.K_SPACE]):
-            doVisualize=True
         
         existMovement=False
 
@@ -732,10 +727,11 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        if(doVisualize):
-            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-            pygame.display.update()
-            # clock.tick(fps)
+        draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
+        vel = SCORE_FONT.render(f'{ball.body.velocity[0]:0.3f},{ball.body.velocity[1]:0.3f}', 1, (16, 16, 16))
+        window.blit(vel, (WIDTH/2-85, 500))
+        pygame.display.update()
+        clock.tick(fps)
 
         # update fitness
         bola_is_gerak = check_velocity(ball.body.velocity, 30, True)
@@ -793,6 +789,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_recorder['B'] -= 1000
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
+            
+        
     ### === END OF WHILE LOOP === ###
 
     # calculate sisa fitness tim A & B + individu
@@ -812,15 +810,15 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(asA and score_data['A'] > score_data['B']):
             fitness_time_goal = (1/total_iter)*10000
             genomes[0][1].ngegol += 1
-            # print('a ngegol')
+            print('a ngegol')
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*10000
             genomes[0][1].ngegol += 1
-            # print('b ngegol')
+            print('b ngegol')
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
-            # print('gol bunuh diri')
+            print('gol bunuh diri')
         # print('---end---')
         genomes[0][1].fitness += fitness_time_goal
     
@@ -906,39 +904,14 @@ def run(config_file):
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
 
-    # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
-
-    # # Add a stdout reporter to show progress in the terminal.
-
-    # Run for up to 300 generations.
     import pickle
-    # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-72')
-    p.config=config
-     
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(30))
-    try:
-        winner = p.run(eval_genomes, 1000)
-        with open('winner_vel_fit.pkl', 'wb') as mfile:
-            pickle.dump(winner, mfile)
-            mfile.close()
-            print('FINISHED')
-    except KeyboardInterrupt:
-        print('voila')
-
-    visualize.plot_stats(p.reporters.reporters[1], ylog=False, view=True)
-    visualize.plot_species(p.reporters.reporters[1], view=True)
-
-
-
-    with open('pop_vel_fit.pkl', 'wb') as mfile:
-        pickle.dump(p, mfile)
-        mfile.close()
-        print('save population')
+    asA=True
+    winner = pickle.load(open('winner_vel_fit.pkl', 'rb'))
+    while True:
+        asA=not asA
+        winner.fitness=0.0
+        game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
+        # break
 
 
 
