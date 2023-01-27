@@ -49,20 +49,21 @@ def create_boundaries(space, width, height, bwidth):
     # format: cx,cy, w,h
     mid_width = width/2
     mid_height = height/2
+    offset = bwidth/3
     rects = [
         # top wall
-        [(mid_width, bwidth/2), (width, bwidth)],
+        [(mid_width, -offset), (width, bwidth), CollisionType.WALL_TOP.value],
         
         # bottom wall
-        [(mid_width, height-bwidth/2), (width, bwidth)],
+        [(mid_width, height+offset), (width, bwidth), CollisionType.WALL_BOTTOM.value],
 
         # left wall
-        [(bwidth/2, mid_height), (bwidth, height)],
+        [(-offset, mid_height), (bwidth, height), CollisionType.WALL_LEFT.value],
 
         # right wall
-        [(width-bwidth/2, mid_height), (bwidth, height)]
+        [(width+offset, mid_height), (bwidth, height), CollisionType.WALL_RIGHT.value]
     ]
-    for pos, size in rects:
+    for pos, size, coltype in rects:
         body = pymunk.Body(body_type=pymunk.Body.STATIC)
         body.position = pos
 
@@ -71,6 +72,7 @@ def create_boundaries(space, width, height, bwidth):
         shape.friction = 0.5
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
+        shape.collision_type=coltype
 
 def goal_a_handler(arbiter, space, data):
     global score_data, game_phase
@@ -117,8 +119,9 @@ def run(window, width, height):
     ======================================
     '''
     # BORDER FOR BOUNCE
-    wall_width=4
+    wall_width=50
     create_boundaries(space, width, height, wall_width)
+    wall_width=4
     
     # GAME'S BALL
     ball = Ball(space, (width/2, height/2))
@@ -231,8 +234,8 @@ def run(window, width, height):
         # for _ in range(step):
         # print(team_A[0].direction)
         team_A[0].solve()
-        print(team_A[0].body.velocity)
-        # print(team_A[0].body.position)
+        # print(team_A[0].body.velocity)
+        print(team_A[0].body.position)
         # print('---')
         space.step(dt)
         draw(space, window, draw_options, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data)

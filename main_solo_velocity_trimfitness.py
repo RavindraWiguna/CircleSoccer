@@ -272,6 +272,33 @@ team_b1_rwall_handler = partial(right_wall_hit_handler, 3)
 team_b2_rwall_handler = partial(right_wall_hit_handler, 4)
 team_b3_rwall_handler = partial(right_wall_hit_handler, 5)
 
+# kalau tembok atas 1, bawah = 2, kiri = 4, kanan = 8, gak kena = 0 (semua bit mati) 
+# ( tapi ya gak mungkin semua bit nyala, atas bawah nyala impos)
+def detect_kena_tembok(position):
+    '''
+    bahaya kalo ganti width length but for now gud
+    '''
+    x, y = position
+    
+    sensor = 0
+    # tembok ci- i mean atas-bawah:
+    if(y < 30.0):
+        # atas
+        sensor +=1
+    elif(y > 730):
+        # bawah
+        sensor +=2
+    
+    # tembok kiri kanan
+    if(x < 77):
+        # di kiri gawang or tembok kiri
+        sensor += 4
+    elif(x > 1196):
+        # kanan, gawang or tembok kanan
+        sensor +=8
+    
+    return sensor
+
 # player id udah include sama tim, 0-5
 def check_hitting_wall(player_id, player:Player):
     global isHitWall
@@ -645,7 +672,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =3.0 # reset
+    max_ronde_time =1.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
