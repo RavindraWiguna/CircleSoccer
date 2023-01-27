@@ -730,14 +730,14 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 7, True)
+        bola_is_gerak = check_velocity(ball.body.velocity, 10, True)
         
         # CATCH BOLA diem lama
         if(bola_is_gerak):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 0.5):
+            if(time.perf_counter() - bola_stay_time > 1.0):
                 draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
                 pygame.display.update()
                 max_ronde_time = 0.0
