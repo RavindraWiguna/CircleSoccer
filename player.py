@@ -198,9 +198,9 @@ class Player(CircleObject):
 
     # ganti arah 1 axis
     def change_direction(self, vel, axis):
-        if(vel==0.0):
+        if(abs(vel) < self.TOL_MAG):
             self.direction[axis]=0
-        elif(vel > 0.0):
+        elif(vel > self.TOL_MAG):
             self.direction[axis]=1
         else:
             self.direction[axis]=-1

@@ -194,7 +194,7 @@ def reset_score():
     score_data['B']=0
 
 def kick_player(player):
-    player.body._set_position((-10,-10))
+    player.body._set_position((-250,-250))
 
 def get_player_team_goal(team_A, team_B, goal_a, goal_b, asA):
     if(asA):
@@ -234,6 +234,7 @@ def out_of_bound_check(objs, width, height):
 def wall_collision_handler(offset_id_wall, offset_id_toucher, arbiter, space, data):
     global isHitWall
     isHitWall[offset_id_wall+offset_id_toucher]=1
+    # print(offset_id_toucher, 'touch', offset_id_wall)
     return True
 
 # make partial func for wall
@@ -277,23 +278,32 @@ def check_hitting_wall(player_id, player:Player):
     dirX, dirY = player.direction
     topoff, botoff, leftoff, rightoff = 0,6,12,18
 
-    # top wall
-    if(isHitWall[topoff+player_id]==1 and dirY==-1 and dirX==0):
-        # nyentuh dan nabrak
+    # top wall only
+    isNabrakTop = isHitWall[topoff+player_id]==1 and dirY==-1
+    if(isNabrakTop and dirX==0):
+        # nyentuh dan nabrak but gak gerak kiri kanan
         return True
     
-    # bottom wall
-    if(isHitWall[botoff+player_id]==1 and dirY==1 and dirX==0):
+    # bottom wall only
+    isNabrakBottom = isHitWall[botoff+player_id]==1 and dirY==1
+    if(isNabrakBottom and dirX==0):
         return True
 
-    # left wall
-    if(isHitWall[leftoff+player_id]==1 and dirY==0 and dirX==-1):
+    # left wall only
+    isNabrakLeft = isHitWall[leftoff+player_id]==1 and dirX == -1
+    if(isNabrakLeft and dirY==0):
         return True
 
-    # right wall
-    if(isHitWall[rightoff+player_id]==1 and dirY==0 and dirX==1):
+    # right wall only
+    isNabrakRight = isHitWall[rightoff+player_id]==1 and dirX ==1
+    if(isNabrakRight and dirY==0):
         return True
     
+    # top/bottom and left/right
+    if((isNabrakTop or isNabrakBottom) and (isNabrakRight or isNabrakLeft)):
+        return True
+
+    # gak semua
     return False
 
 def check_velocity(velocity, threshold):
@@ -492,7 +502,7 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -648,10 +658,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # get player, self goal, opo goal, team, etc
     net, genome = team_net[0]
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
-    player_solve = [player]
     
-    index = 0 if asA else 3
-    player_cek = [[player, index]]
+    player_index = 0 if asA else 3
+    player_cek = [[player, player_index]]
 
     # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
     prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
@@ -660,6 +669,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     ronde_time = time.perf_counter()
     while isRun:
         doVisualize=False
+        isHitWall = [0]*24
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 forceQuit=True
@@ -679,15 +689,12 @@ def game(window, width, height, genomes, config, doRandom, asA):
         output = net.activate(the_input)
         process_output(output, genome, player)
         
-        # IMPORTANT! solve the player movement
-        solve_players(player_cek)
-
         # update world and graphics
         for _ in range(step):
             space.step(dt)
         
         if(doVisualize):
-            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, True)
+            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
             pygame.display.update()
             # clock.tick(fps)
 
@@ -741,7 +748,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # punish
             fitness_recorder['A'] -= 1000
             fitness_recorder['B'] -= 1000
-            print(player.direction, player.body.position)
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
     ### === END OF WHILE LOOP === ###
