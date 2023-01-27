@@ -372,10 +372,10 @@ def checkAllStandStill(players, ball, doWallCheck):
         existMovement = check_velocity(obj.body.velocity, vel_threshold)
         if(existMovement):
             # cek apa gerak tapi nabrak tembok
-            isHittingWall_cor = check_wall_hit_based_coor(obj)
+            # isHittingWall_cor = check_wall_hit_based_coor(obj)
             isHittingWall_col = check_wall_hit_based_collision(index, obj)
             # isHittingWall = check_wall_hit_based_collision(index, obj)
-            if(isHittingWall_cor or isHittingWall_col ):
+            if(isHittingWall_col ):
                 existMovement=False
 
         # kalau lewat 2 2 nya ok ada gerakan        
@@ -730,18 +730,18 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 25, True)
+        bola_is_gerak = check_velocity(ball.body.velocity, 12, True)
         
         # CATCH BOLA diem lama
         if(bola_is_gerak):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 0.75):
+            if(time.perf_counter() - bola_stay_time > 0.5):
                 draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
                 pygame.display.update()
                 max_ronde_time = 0.0
-                print('0.75s in real time diem')
+                # print('0.5s in real time diem', iter_to_touch)
 
 
                 
