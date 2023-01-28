@@ -38,8 +38,9 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 5
+max_touch = 50
 max_drible = 3
+just_sentuh=False
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
 # males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
 isHitWall = [0]*24
@@ -57,8 +58,10 @@ def draw_score(window, a, b):
     score_text = SCORE_FONT.render(f'{a:02d} : {b:02d}', 1, (16, 16, 16))
     window.blit(score_text, (WIDTH/2-85, 10))
 
-def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=False):
+def clear_screen(window):
     window.blit(bg, (0,0))
+
+def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=False):
     draw_score(window, score_data['A'], score_data['B'])
     
     if(isDebug):
@@ -67,9 +70,24 @@ def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=Fal
         for obj in objs:
             obj.draw(window)
 
+def draw_ball_vec_vel(window, ball):
+    Px, Py = ball.body.position
+    maxMag = max(abs(Vx), abs(Vy)) + 1
+    Vx /= maxMag
+    Vy /= maxMag
+    end_position = (Px + Vx*100, Py + Vy*100)
+    pygame.draw.line(window, (16, 128, 128), ball.body.position, end_position, 5)
+
+def draw_ball_to_goal_line(window, ball, opo_goal):
+    Px, Py = ball.body.position
+    gPx, gPy = opo_goal.body.position
+    distance = calculate_distance((Px, Py), (gPx, gPy))    
+    Dx = (gPx - Px)/distance
+    Dy = (gPy - Py)/distance
+    end_position = (Px + Dx*100, Py + Dy*100)
+    pygame.draw.line(window, (16, 16, 16), ball.body.position, end_position, 5)
 
 ### === GAME SPECIFIC FUNCTIONS === ###
-
 def create_boundaries(space, width, height, bwidth):
     # format: cx,cy, w,h
     mid_width = width/2
@@ -183,13 +201,14 @@ def goal_b_handler(arbiter, space, data):
     return True
 
 def ball_touch_handler(collision_type_toucher, arbiter, space, data):
-    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch
+    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch, just_sentuh
     
     if(not fitness_recorder.__contains__(collision_type_toucher)):
         fitness_recorder[collision_type_toucher]=0
     
     # print(collision_type_toucher, 'touch the ball')
     # fitness_recorder[collision_type_toucher]
+    just_sentuh=True #ONLY WORK IF SOLO, karna 1 yg di observe
     solo_touch_ball_counter+=1
     solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
     if(solo_touch_ball_counter < max_touch):
@@ -552,9 +571,6 @@ def calculate_ball_fitness(player, ball):
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_ball/max_fitness
     fitness *=17
-    # fitness = max_fitness - final_distance_ball
-    # print(max_fitness, final_distance_ball
-    # fitness /= 1000 # (karena main 6 ronde) # ku kecilin lgi
     return fitness
 
 def calculate_ball_goal_fitness(opo_goal, ball):
@@ -563,6 +579,17 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     fitness = 1 - final_distance_goal/max_fitness
     fitness *=1000
     return fitness, final_distance_goal
+
+def get_ball_vec_angle(ball):
+    Vx, Vy = ball.body.velocity
+    angle = calculate_angle((0,0), (Vx, Vy))
+    return angle
+
+def get_ball_to_goal_angle(ball, opo_goal):
+    Px, Py = ball.body.position
+    gPx, gPy = opo_goal.body.position
+    angle = calculate_angle((Px, Py), (gPx, gPy))
+    return angle
 
 '''
 =================
@@ -589,7 +616,7 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch, just_sentuh
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -793,31 +820,45 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 2, True)
-        
-        # CATCH BOLA diem lama
-        if(bola_is_gerak):
-            bola_stay_time = time.perf_counter()
-        else:
-            # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 0.6):
-                # draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-                # pygame.display.update()
-                max_ronde_time = 0.0
-                # print('0.5s in real time diem', iter_to_touch)
-
         if(doVisualize):
+            clear_screen(window)
             draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
             pygame.display.update()
             # clock.tick(fps)
 
+        # FITNESS INSIDE LOOP (DANGER VIN, BUT I BELIEVE IN MATH)
+        if(just_sentuh):
+            just_sentuh=False
+            angle_vec = get_ball_vec_angle(ball)
+            angle_goal = get_ball_to_goal_angle(ball, opo_goal[0])
+            dtetha = calculate_diff_angle(angle_goal, angle_vec)
+            double_dtetha = dtetha*2
+            if(double_dtetha < np.pi):
+                # fancy way detect < pi/2 is 2* < pi
+                # bonus bener nendang:
+                bonus_bener_nendang = 1 - double_dtetha/np.pi
+                genomes[0][1].fitness += bonus_bener_nendang
+                # print(to_degree(dtetha), bonus_bener_nendang)
+
+
+        # cek time out based by ball
+        bola_is_gerak = check_velocity(ball.body.velocity, 2, True)
+        # CATCH BOLA diem lama
+        if(bola_is_gerak):
+            bola_stay_time = time.perf_counter()
+        else:
+            # ok diem, cek berapa lama diem, kalu lama, end
+            if(time.perf_counter() - bola_stay_time > 0.6):
+                max_ronde_time = 0.0
+        
+        # cek termination by player ngejauh
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
         # karang malah menjauh, but cek if bola gerak
         if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
             if(cur_distance_ball > 200):# kalo di bawah 100 gpp menjauh dikit
                 isRun = False
-            
         prev_distance_ball = cur_distance_ball
+
         # check termination
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -942,13 +983,13 @@ def eval_genomes(genomes, config):
         genomes[id_genome][1].own_goal = 0
         genomes[id_genome][1].sqe_dis2_goal = []
         
-        prev_nendang = 0
-        prev_og = 0
+        # prev_nendang = 0
+        # prev_og = 0
         prev_goal = 0
         counter = 0
         max_try = 1000
         hasChance=True
-        max_patience = 2
+        max_patience = 1
         patience_count=0
 
         while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
@@ -969,14 +1010,9 @@ def eval_genomes(genomes, config):
             else:
                 hasChance=True
                 # print('lanjut')
-            
-            nendang_score = (genomes[id_genome][1].nendang - prev_nendang) * 150
-            if(genomes[id_genome][1].own_goal == prev_og > nendang_score):
-                nendang_score *= -1
 
-            genomes[id_genome][1].fitness += nendang_score
-            prev_nendang = genomes[id_genome][1].nendang
-            prev_og = genomes[id_genome][1].own_goal
+            # prev_nendang = genomes[id_genome][1].nendang
+            # prev_og = genomes[id_genome][1].own_goal
             prev_goal = genomes[id_genome][1].ngegol
         
         
@@ -1024,14 +1060,14 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
+    p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
 
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-133')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-133')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
