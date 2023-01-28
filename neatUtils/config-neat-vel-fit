@@ -45,8 +45,8 @@ node_delete_prob        = 0.2
 
 # network parameters
 num_hidden              = 0
-# 24 + 1 bias
-num_inputs              = 31
+# 12 + 1 bias
+num_inputs              = 13
 # back to vel +x -x +y -y
 num_outputs             = 4
 

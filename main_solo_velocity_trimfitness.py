@@ -38,7 +38,7 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 50
+max_touch = 12
 max_drible = 3
 just_sentuh=False
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
@@ -521,39 +521,27 @@ def get_position_distance(src_pos, dst_pos, constant):
     dy*=constant
     return [dx, dy]
 
-def make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant):
-    player = self_team[id_self]
-    # self team posv
-    self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
+def make_data_masuk_solo(player, opo_goal, ball):
+    vx, vy = player.body.velocity
+    px, py = player.body.position
+    Bvx, Bvy = ball.body.velocity
+    Bpx, Bpy = ball.body.position
+    Gpx, Gpy = opo_goal.body.position
 
+    # self posv
+    self_pos_vel            = [px, py, vx, vy]
+    
     # ball posv dis
-    ball_data               = get_ball_pos_vel(ball, constant, norm_div)
-    ball_distance           = get_position_distance(player.body.position, ball.body.position, constant)
-
-    # wall dis
-    wall_data               = get_boundary_distance(player.body.position, width, height, constant)
-
-    # goals dis
-    opponent_goal_data      = get_position_distance(player.body.position, opo_goal[0].body.position, constant)
-    opponent_goal_tiang_l   = get_position_distance(player.body.position, opo_goal[1].body.position, constant)
-    opponent_goal_tiang_r   = get_position_distance(player.body.position, opo_goal[2].body.position, constant)
-
-    # goals dis
-    self_goal_data      = get_position_distance(player.body.position, self_goal[0].body.position, constant)
-    self_goal_tiang_l   = get_position_distance(player.body.position, self_goal[1].body.position, constant)
-    self_goal_tiang_r   = get_position_distance(player.body.position, self_goal[2].body.position, constant)
+    ball_data               = [Bpx, Bpy, Bvx, Bvy]
+    ball_to_player_dis           = [Bpx-px, Bpy-py]
 
     # ball to goal
-    opponent_goal_data_ball      = get_position_distance(ball.body.position, opo_goal[0].body.position, constant)
-    opponent_goal_tiang_l_ball   = get_position_distance(ball.body.position, opo_goal[1].body.position, constant)
-    opponent_goal_tiang_r_ball   = get_position_distance(ball.body.position, opo_goal[2].body.position, constant)
+    ball_to_gawang = [Gpx-Bpx, Gpy-Bpy] 
     
     bias=0.5
-
-    the_input = [*self_pos_vel, *ball_data, *ball_distance, *wall_data, 
-    *opponent_goal_data, *opponent_goal_tiang_l, *opponent_goal_tiang_r,
-    *opponent_goal_data_ball, *opponent_goal_tiang_l_ball, *opponent_goal_tiang_r_ball, 
-    *self_goal_data,*self_goal_tiang_l,*self_goal_tiang_r,bias]
+    the_input = [
+        *self_pos_vel, *ball_data, *ball_to_player_dis, *ball_to_gawang, bias
+    ]
     return the_input
 
 '''
@@ -811,7 +799,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             doVisualize=True
 
         # gerakin player
-        the_input = make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant)
+        the_input = make_data_masuk_solo(player, opo_goal[0], ball)
         # output probability action
         output = net.activate(the_input)
         process_output(output, genome, player)
@@ -837,7 +825,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 # fancy way detect < pi/2 is 2* < pi
                 # bonus bener nendang:
                 bonus_bener_nendang = 1 - double_dtetha/np.pi
-                genomes[0][1].fitness += bonus_bener_nendang
+                genomes[0][1].fitness += bonus_bener_nendang*10
                 # print(to_degree(dtetha), bonus_bener_nendang)
 
 
@@ -912,7 +900,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # ceritanya hitung MSE, tapi negatif, makin gede distance makin kecil
     sqe = (norm_distance*norm_distance)
     if(solo_touch_ball_counter == 0):
-        sqe = 10000
+        sqe = 2500
 
     # gak ke pake tapi
     genomes[0][1].nendang += solo_touch_ball_counter
