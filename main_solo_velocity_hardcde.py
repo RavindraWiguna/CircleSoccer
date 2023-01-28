@@ -809,6 +809,15 @@ def game(window, width, height, genomes, config, doRandom, asA):
             isRun=False
             print('out of bound')
     ### === END OF WHILE LOOP === ###
+    
+    d2g = calculate_distance(opo_goal[0].body.position, (width/2, 0))
+    norm_distance = d2g/max_distance_possible * 100
+    # ceritanya hitung MSE, tapi negatif, makin gede distance makin kecil
+    sqe = (norm_distance*norm_distance)
+    # if(solo_touch_ball_counter == 0):
+        # sqe = 10000
+    print(sqe, d2g, norm_distance)
+    
     # remove object from space? or just remove space
     for obj in space.bodies:
         space.remove(obj)

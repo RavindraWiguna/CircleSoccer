@@ -895,7 +895,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         genomes[0][1].fitness += fitness_time_goal
     
     # tambah sqe yg uda di proses
-    genomes[0][1].squared_error_bola_gawang.append(sqe)
+    genomes[0][1].sqe_dis2_goal.append(sqe)
 
     # remove object from space? or just remove space
     for obj in space.bodies:
@@ -928,6 +928,7 @@ def make_teams(genomes):
         id=new_id
     return teams
 
+import pickle
 def eval_genomes(genomes, config):
     set_fitness_val(genomes)
     # total_repeat = 3 # ganti jadi banyak in a row
@@ -939,11 +940,14 @@ def eval_genomes(genomes, config):
         genomes[id_genome][1].ngegol = 0
         genomes[id_genome][1].nendang = 0
         genomes[id_genome][1].own_goal = 0
-        genomes[id_genome][1].squared_error_bola_gawang = []
+        genomes[id_genome][1].sqe_dis2_goal = []
+        
         prev_nendang = 0
+        prev_og = 0
         counter = 0
         max_try = 1000
         hasChance=True
+
         while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
             counter+=1
             # do 1 game
@@ -952,18 +956,38 @@ def eval_genomes(genomes, config):
             if(fq):break
             
             hasChance = genomes[id_genome][1].nendang > prev_nendang
+            
+            nendang_score = (genomes[id_genome][1].nendang - prev_nendang) * 150
+            if(genomes[id_genome][1].own_goal == prev_og > nendang_score):
+                nendang_score *= -1
+
+            genomes[id_genome][1].fitness += nendang_score
             prev_nendang = genomes[id_genome][1].nendang
+            prev_og = genomes[id_genome][1].own_goal
         
-        if(genomes[id_genome][1].ngegol > 0):
-            print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
         
         # calculate additional fitness
         gol_score = genomes[id_genome][1].ngegol*5000
         own_goal_score = genomes[id_genome][1].own_goal*-11000
-        neg_mse = np.mean(genomes[id_genome][1].squared_error_bola_gawang)*-1
+        neg_mse = np.mean(genomes[id_genome][1].sqe_dis2_goal)*-1
+        
         genomes[id_genome][1].fitness += own_goal_score  + neg_mse + gol_score
         genomes[id_genome][1].neg_mse = neg_mse
         
+        if(genomes[id_genome][1].ngegol > 0):
+            print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol')
+            print('stat:')
+            seenome = genomes[id_genome][1]
+            print('|gol:', seenome.ngegol, '|og:', seenome.own_goal,'|kc', seenome.nendang,
+            '\n|neg_mse:', seenome.neg_mse, 'ft:', seenome.fitness, 'std_sqe:', np.std(seenome.sqe_dis2_goal))
+
+            
+            if(genomes[id_genome][1].ngegol > 75):
+                with open(f'genome_pengegol_{id_genome}_{genomes[id_genome][1].ngegol}.pkl','wb') as mfile:
+                    pickle.dump(genomes[id_genome], mfile)
+                    mfile.close()
+                    print('saved gol:', genomes[id_genome][1].ngegol)
+
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
             best_fitness = genomes[id_genome][1].fitness
@@ -974,7 +998,7 @@ def eval_genomes(genomes, config):
     print('best:', best_fitness)
     print('stat:')
     bgenome = genomes[best_id][1]
-    print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.squared_error_bola_gawang,'\n|neg_mse:', bgenome.neg_mse)      
+    print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.sqe_dis2_goal,'\n|neg_mse:', bgenome.neg_mse)      
 
 
 
@@ -985,14 +1009,14 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    # p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
 
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-59')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-133')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
