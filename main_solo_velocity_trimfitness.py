@@ -735,7 +735,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 10, True)
+        bola_is_gerak = check_velocity(ball.body.velocity, 25, True)
         
         # CATCH BOLA diem lama
         if(bola_is_gerak):
@@ -823,7 +823,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(asA and score_data['A'] > score_data['B']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            sqe = 0
+            sqe = 0 
 
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*100000
@@ -883,27 +883,28 @@ def eval_genomes(genomes, config):
         genomes[id_genome][1].own_goal = 0
         genomes[id_genome][1].squared_error_bola_gawang = []
         asA = True
-        prev_goal = -1
+        prev_nendang = 0
         counter = 0
-        while(prev_goal < genomes[id_genome][1].ngegol and genomes[id_genome][1].ngegol < 101):
-            if(counter % 2 == 1):
-                prev_goal +=1
-            
+        max_try = 1000
+        hasChance=True
+        while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
             counter+=1
             # do 1 game
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, asA)
             if(fq):break
             # repeat ganti team
             asA = not asA
+            hasChance = genomes[id_genome][1].nendang > prev_nendang
+            prev_nendang = genomes[id_genome][1].nendang
         
         if(genomes[id_genome][1].ngegol > 0):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
         
         # calculate additional fitness
-        gol_score = genomes[id_genome][1].ngegol*5000
+        # gol_score = genomes[id_genome][1].ngegol*5000
         own_goal_score = genomes[id_genome][1].own_goal*-11000
         neg_mse = np.mean(genomes[id_genome][1].squared_error_bola_gawang)*-1
-        genomes[id_genome][1].fitness +=  gol_score + own_goal_score  + neg_mse
+        genomes[id_genome][1].fitness += own_goal_score  + neg_mse
         genomes[id_genome][1].neg_mse = neg_mse
         
         if(best_fitness < genomes[id_genome][1].fitness):
@@ -934,7 +935,7 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-269')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-140')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
