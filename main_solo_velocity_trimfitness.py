@@ -22,6 +22,7 @@ WIDTH, HEIGHT = 160*MULT, 95*MULT
 min_dim = min(WIDTH, HEIGHT)
 norm_div = min_dim/2
 constant = 2/min_dim
+max_distance_possible = calculate_distance((0,0), (WIDTH, HEIGHT))
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 bg = pygame.image.load('assets/images/bg.png')
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
@@ -513,7 +514,7 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_goal/max_fitness
     fitness *=1000
-    return fitness
+    return fitness, final_distance_goal
 
 '''
 =================
@@ -701,7 +702,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     player_index = 0 if asA else 3
     player_cek = [[player_index, player]]
 
-    # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
+    # termination algo biar cepet
     prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
 
     forceQuit=False
@@ -752,7 +753,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
             pygame.display.update()
             # clock.tick(fps)
 
-        # update fitness
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
         # karang malah menjauh, but cek if bola gerak
         if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
@@ -807,40 +807,38 @@ def game(window, width, height, genomes, config, doRandom, asA):
             break
     ### === END OF WHILE LOOP === ###
 
-    # calculate sisa fitness tim A & B + individu
-    # makin deket bola makin bagus
-    fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)*(solo_touch_ball_counter > 0)
-    bounus_multiplier =  (max_touch - solo_touch_ball_counter + 1)/max_touch
-    capped_multiplier = (solo_touch_ball_counter < max_touch) * bounus_multiplier 
-    bonus_less_ndang = fitness_goalz*(1 + capped_multiplier)
-    genomes[0][1].fitness += bonus_less_ndang # makin dikit nyentuh, makin deket makin mantap
-    # if(fitness_goalz != 0):
-        # print('---start--')
-        # print('disto gol', calculate_distance(ball.body.position, opo_goal[0].body.position), 'fit:',fitness_goalz, 'dang:', solo_touch_ball_counter, 'dangmut:', bonus_less_ndang)
+    # hitung jarak ke gol
+    distance_to_goal = calculate_distance(ball.body.position, opo_goal[0].body.position)
+    norm_distance = distance_to_goal/max_distance_possible * 100
+    # ceritanya hitung MSE, tapi negatif, makin gede distance makin kecil
+    sqe = (norm_distance*norm_distance)
+    if(solo_touch_ball_counter == 0):
+        sqe = 10000
 
+    # gak ke pake tapi
     genomes[0][1].nendang += solo_touch_ball_counter
-    # if(genomes[0][1].nendang != 0):
-        # print(genomes[0][1].nendang, 'ndang')
 
-    # bonus time ngegol
+    # bonus time ngegol + fix sqe
     if(game_phase == GamePhase.JUST_GOAL):
         if(asA and score_data['A'] > score_data['B']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            # print('a ngegol')
-            # print(fitness_time_goal)
+            sqe = 0
+
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            # print('b ngegol')
-            # print(fitness_time_goal)
+            sqe=0
+
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
-            # print('gol bunuh diri')
-        # print('---end---')
+
         genomes[0][1].fitness += fitness_time_goal
     
+    # tambah sqe yg uda di proses
+    genomes[0][1].squared_error_bola_gawang.append(sqe)
+
     # remove object from space? or just remove space
     for obj in space.bodies:
         space.remove(obj)
@@ -876,13 +874,14 @@ def eval_genomes(genomes, config):
     set_fitness_val(genomes)
     # total_repeat = 3 # ganti jadi banyak in a row
     genome_pengegol = []
-    best_fitness = 0.0
+    best_fitness = -100000000
     best_id = 0
     total_fitness = 0.0
     for id_genome in range(len(genomes)):
         genomes[id_genome][1].ngegol = 0
         genomes[id_genome][1].nendang = 0
         genomes[id_genome][1].own_goal = 0
+        genomes[id_genome][1].squared_error_bola_gawang = []
         asA = True
         prev_goal = -1
         counter = 0
@@ -899,10 +898,14 @@ def eval_genomes(genomes, config):
         
         if(genomes[id_genome][1].ngegol > 0):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
-            genome_pengegol.append(id_genome)
         
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*5000 - genomes[id_genome][1].own_goal*11000 + genomes[id_genome][1].nendang*500
-
+        # calculate additional fitness
+        gol_score = genomes[id_genome][1].ngegol*5000
+        own_goal_score = genomes[id_genome][1].own_goal*-11000
+        neg_mse = np.mean(genomes[id_genome][1].squared_error_bola_gawang)*-1
+        genomes[id_genome][1].fitness +=  gol_score + own_goal_score  + neg_mse
+        genomes[id_genome][1].neg_mse = neg_mse
+        
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
             best_fitness = genomes[id_genome][1].fitness
@@ -913,7 +916,7 @@ def eval_genomes(genomes, config):
     print('best:', best_fitness)
     print('stat:')
     bgenome = genomes[best_id][1]
-    print('gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'|ndang', bgenome.nendang)      
+    print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.squared_error_bola_gawang,'\n|neg_mse:', bgenome.neg_mse)      
 
 
 
@@ -924,14 +927,14 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
+    p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
 
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-214')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-269')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
