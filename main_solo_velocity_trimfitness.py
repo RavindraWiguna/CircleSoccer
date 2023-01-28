@@ -37,7 +37,7 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 2
+max_touch = 5
 max_drible = 3
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
 # males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
@@ -741,7 +741,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 0.6):
+            if(time.perf_counter() - bola_stay_time > 1.2):
                 # draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
                 # pygame.display.update()
                 max_ronde_time = 0.0
@@ -780,8 +780,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # endgame_fitness() no move ga dikasi reward
             isRun=False
             # punish!!!!!!!!!!
-            fitness_recorder['A']-=10000
-            fitness_recorder['B']-=10000
+            fitness_recorder['A']-=11000
+            fitness_recorder['B']-=11000
             # print('no move, faster detect time out')
             # ga usah di punish
         else:
@@ -793,16 +793,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(isOutOfBound):
             isRun=False
             # punish
-            fitness_recorder['A'] -=1000
-            fitness_recorder['B'] -=1000
+            fitness_recorder['A'] -=11000
+            fitness_recorder['B'] -=11000
             print('out of bound')
 
         # jika time out dan bola udah gak gerak
         if (time.perf_counter()-ronde_time) > max_ronde_time and not bola_is_gerak:
             isRun=False
             # punish
-            fitness_recorder['A'] -= 10000
-            fitness_recorder['B'] -= 10000
+            fitness_recorder['A'] -= 11000
+            fitness_recorder['B'] -= 11000
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
     ### === END OF WHILE LOOP === ###
@@ -810,10 +810,13 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # calculate sisa fitness tim A & B + individu
     # makin deket bola makin bagus
     fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)*(solo_touch_ball_counter > 0)
-    genomes[0][1].fitness += fitness_goalz
+    bounus_multiplier =  (max_touch - solo_touch_ball_counter + 1)/max_touch
+    capped_multiplier = (solo_touch_ball_counter < max_touch) * bounus_multiplier 
+    bonus_less_ndang = fitness_goalz*(1 + capped_multiplier)
+    genomes[0][1].fitness += bonus_less_ndang # makin dikit nyentuh, makin deket makin mantap
     # if(fitness_goalz != 0):
-    # print('---start--')
-    # print('goalz', fitness_goalz)
+        # print('---start--')
+        # print('disto gol', calculate_distance(ball.body.position, opo_goal[0].body.position), 'fit:',fitness_goalz, 'dang:', solo_touch_ball_counter, 'dangmut:', bonus_less_ndang)
 
     genomes[0][1].nendang += solo_touch_ball_counter
     # if(genomes[0][1].nendang != 0):
@@ -884,7 +887,7 @@ def eval_genomes(genomes, config):
         prev_goal = -1
         counter = 0
         while(prev_goal < genomes[id_genome][1].ngegol and genomes[id_genome][1].ngegol < 101):
-            if(counter % 3 == 2):
+            if(counter % 2 == 1):
                 prev_goal +=1
             
             counter+=1
@@ -898,7 +901,7 @@ def eval_genomes(genomes, config):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
             genome_pengegol.append(id_genome)
         
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*3500 - genomes[id_genome][1].own_goal*10000 + genomes[id_genome][1].nendang*500
+        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*5000 - genomes[id_genome][1].own_goal*11000 + genomes[id_genome][1].nendang*500
 
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
@@ -928,7 +931,7 @@ def run(config_file):
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-186')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-214')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
