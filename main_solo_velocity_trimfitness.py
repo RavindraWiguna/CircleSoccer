@@ -38,7 +38,7 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 12
+max_touch = 50
 max_drible = 3
 just_sentuh=False
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
@@ -521,12 +521,23 @@ def get_position_distance(src_pos, dst_pos, constant):
     dy*=constant
     return [dx, dy]
 
-def make_data_masuk_solo(player, opo_goal, ball):
+def make_data_masuk_solo(player, opo_goal, ball, width, needFlip):
     vx, vy = player.body.velocity
     px, py = player.body.position
     Bvx, Bvy = ball.body.velocity
     Bpx, Bpy = ball.body.position
     Gpx, Gpy = opo_goal.body.position
+
+
+    if(needFlip):
+        # flip velocity x
+        vx *= -1
+        Bvx *= -1
+
+        # flip pos x
+        px = width-px
+        Bpx = width-Bpx
+        Gpx = width - Gpx
 
     # self posv
     self_pos_vel            = [px, py, vx, vy]
@@ -799,7 +810,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             doVisualize=True
 
         # gerakin player
-        the_input = make_data_masuk_solo(player, opo_goal[0], ball)
+        the_input = make_data_masuk_solo(player, opo_goal[0], ball, width, not asA)
         # output probability action
         output = net.activate(the_input)
         process_output(output, genome, player)
@@ -825,12 +836,15 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 # fancy way detect < pi/2 is 2* < pi
                 # bonus bener nendang:
                 bonus_bener_nendang = 1 - double_dtetha/np.pi
-                genomes[0][1].fitness += bonus_bener_nendang*10
+                fitnesfied = bonus_bener_nendang*10*(solo_touch_ball_counter < max_touch)
+                genomes[0][1].fitness += fitnesfied
+                if(solo_touch_ball_counter==max_touch):
+                    print('eyo menthok, ga bisa nambah', fitnesfied)
                 # print(to_degree(dtetha), bonus_bener_nendang)
 
 
         # cek time out based by ball
-        bola_is_gerak = check_velocity(ball.body.velocity, 2, True)
+        bola_is_gerak = check_velocity(ball.body.velocity, 30, True)
         # CATCH BOLA diem lama
         if(bola_is_gerak):
             bola_stay_time = time.perf_counter()
@@ -857,7 +871,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             if(time.perf_counter()-start_time_after_goal >= wait_after_goal):
                 # end ronde
                 isRun=False
-                print('get to 1 goal stop')
+                # print('get to 1 goal stop')
                 break
         
         # same, check termination
@@ -911,15 +925,18 @@ def game(window, width, height, genomes, config, doRandom, asA):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
             sqe = 0 
+            print('a ngegol must be tru->', asA)
 
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
             sqe=0
+            print('B ngegol must be tru->', not asA)
 
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
+            print('bunuh diri wtf')
 
         genomes[0][1].fitness += fitness_time_goal
     
