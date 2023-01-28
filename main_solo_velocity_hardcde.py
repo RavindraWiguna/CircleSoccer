@@ -40,6 +40,9 @@ iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
 max_touch = 5
 max_drible = 3
+
+just_sentuh = False
+
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
 # males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
 isHitWall = [0]*24
@@ -67,6 +70,34 @@ def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=Fal
         for obj in objs:
             obj.draw(window)
 
+
+def get_ball_vec_vel(window, ball, do_draw):
+    Vx, Vy = ball.body.velocity
+    angle = calculate_angle((0,0), (Vx, Vy))
+
+    if(do_draw):
+        Px, Py = ball.body.position
+        maxMag = max(abs(Vx), abs(Vy)) + 1
+        Vx /= maxMag
+        Vy /= maxMag
+        end_position = (Px + Vx*100, Py + Vy*100)
+        pygame.draw.line(window, (16, 128, 128), ball.body.position, end_position, 5)
+
+    return angle
+
+def get_ball_goal_vec(window, ball, opo_goal, do_draw):
+    Px, Py = ball.body.position
+    gPx, gPy = opo_goal.body.position
+    angle = calculate_angle((Px, Py), (gPx, gPy))
+
+    if(do_draw):
+        distance = calculate_distance((Px, Py), (gPx, gPy))    
+        Dx = (gPx - Px)/distance
+        Dy = (gPy - Py)/distance
+        end_position = (Px + Dx*100, Py + Dy*100)
+        pygame.draw.line(window, (16, 16, 16), ball.body.position, end_position, 5)
+
+    return angle
 
 ### === GAME SPECIFIC FUNCTIONS === ###
 
@@ -182,7 +213,7 @@ def goal_b_handler(arbiter, space, data):
     return True
 
 def ball_touch_handler(collision_type_toucher, arbiter, space, data):
-    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch
+    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch, just_sentuh
     
     if(not fitness_recorder.__contains__(collision_type_toucher)):
         fitness_recorder[collision_type_toucher]=0
@@ -191,6 +222,7 @@ def ball_touch_handler(collision_type_toucher, arbiter, space, data):
     # fitness_recorder[collision_type_toucher]
     solo_touch_ball_counter+=1
     solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
+    just_sentuh=True # karna solo yg nyentuh 1 aja si playernya
     if(solo_touch_ball_counter < max_touch):
         ronde_time = time.perf_counter()
 
@@ -588,7 +620,7 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch, just_sentuh
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -767,8 +799,15 @@ def game(window, width, height, genomes, config, doRandom, asA):
             space.step(dt)
 
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, True)
+        angle_vec = get_ball_vec_vel(window, ball, True)
+        angle_goal = get_ball_goal_vec(window, ball, opo_goal[0], True)
+        if(just_sentuh):
+            just_sentuh=False
+            print(to_degree(calculate_diff_angle(angle_goal, angle_vec)))
+            
+        
         pygame.display.update()
-        clock.tick(fps)
+        clock.tick(10)
 
         dis_prev_now = calculate_distance(ball.body.position, ball_prev_pos)
         if(ballNeverMove):
@@ -801,6 +840,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
         
         
         game_phase=GamePhase.Normal
+
+
 
         # cek apakah out o bound
         objs = [ball, player]

@@ -22,6 +22,7 @@ WIDTH, HEIGHT = 160*MULT, 95*MULT
 min_dim = min(WIDTH, HEIGHT)
 norm_div = min_dim/2
 constant = 2/min_dim
+max_distance_possible = calculate_distance((0,0), (WIDTH, HEIGHT))
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 bg = pygame.image.load('assets/images/bg.png')
 bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
@@ -37,7 +38,7 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 2
+max_touch = 5
 max_drible = 3
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
 # males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
@@ -97,6 +98,54 @@ def create_boundaries(space, width, height, bwidth):
         shape.color = (128, 8, 8, 100)
         space.add(body, shape)
         shape.collision_type=coltype
+
+
+def make_slopes(space, width, height, n, bwidth, goal_right_top, goal_right_bottom, goal_left_top, goal_left_bottom, width_tiang):    
+    const_val = n+bwidth
+
+    # goal-right-top-center-x, goal-right-top-center-y
+    grtcx, grtcy = goal_right_top
+    grbcx, grbcy = goal_right_bottom
+    gltcx, gltcy = goal_left_top
+    glbcx, glbcy = goal_left_bottom
+
+    hw = width_tiang/2
+
+    slopes = [
+        # top left
+        [(n, 0),(const_val, 0), (0, const_val), (0, n)],
+
+        # bottom left
+        [(0,height-const_val), (0, height-n), (n, height), (const_val, height)],
+
+        # top right
+        [(width-n, 0),(width-const_val, 0), (width, const_val), (width, n)],
+
+        # bottom right
+        [(width-const_val, height),(width-n, height), (width, height-n), (width, height-const_val)],
+
+        # goal right-top (or rigt-left uh, i confuse and once said top is left di kode bagian bawah, so 2 phrase 1 arti)
+        [(grtcx-hw, grtcy),(grtcx+bwidth-hw, grtcy), (width, grtcy-width_tiang), (width, grtcy-width_tiang-bwidth)],
+
+        # goal right bottom
+        [(grbcx-hw, grbcy), (grbcx+bwidth-hw, grbcy), (width, grbcy+width_tiang), (width, grbcy+width_tiang+bwidth)],
+
+        # goal left top
+        [(gltcx+hw, gltcy),(gltcx+hw+bwidth, gltcy), (0, gltcy+width_tiang), (0, gltcy+width_tiang+bwidth)],
+
+        # goal left bottom
+        [(glbcx+hw, glbcy), (glbcx+hw+bwidth, glbcy), (0, glbcy-width_tiang), (0, glbcy-width_tiang-bwidth)]
+
+    ]
+
+    for poly in slopes:
+        body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        # print(poly)
+        shape = pymunk.Poly(body, poly)
+        shape.elasticity = 0.9
+        shape.color = (128, 8, 8, 100)
+        space.add(body, shape)
+
 
 '''
 =====================
@@ -513,7 +562,7 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_goal/max_fitness
     fitness *=1000
-    return fitness
+    return fitness, final_distance_goal
 
 '''
 =================
@@ -571,15 +620,22 @@ def game(window, width, height, genomes, config, doRandom, asA):
     width_goal=6
     width_tiang=48
     height_tiang=width_goal
+    offsetb=-6
+
+    grtc = (width-wall_width-width_tiang/2+offsetb, height/2-height_goal/2-height_tiang/2)
+    grbc = (width-wall_width-width_tiang/2+offsetb, height/2+height_goal/2+height_tiang/2)
+    gltc = (wall_width+width_tiang/2, height/2+height_goal/2+height_tiang/2)
+    glbc = (wall_width+width_tiang/2, height/2-height_goal/2-height_tiang/2)
+
     goal_a = [
         # vertical sensor
-        RectObject(space, (wall_width+width_goal/2, height/2), (width_goal, height_goal), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+        RectObject(space, (wall_width+width_goal/2, height/2), (width_goal, height_goal), 1, 0.2, 500, isDynamic=False, color=(225, 225, 225, 100)),
         
         # tiang bawah
-        RectObject(space, (wall_width+width_tiang/2, height/2+height_goal/2+height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+        RectObject(space, glbc, (width_tiang, height_tiang), 1, 1, 500, isDynamic=False, color=(225, 225, 225, 100)),
 
         # tiang atas
-        RectObject(space, (wall_width+width_tiang/2, height/2-height_goal/2-height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
+        RectObject(space, gltc, (width_tiang, height_tiang), 1, 1, 500, isDynamic=False, color=(225, 225, 225, 100))
     ]
 
     goal_a[0].shape.collision_type=CollisionType.GOAL_A.value
@@ -587,22 +643,25 @@ def game(window, width, height, genomes, config, doRandom, asA):
     goal_a_sensor = space.add_collision_handler(ball.shape.collision_type, goal_a[0].shape.collision_type)
     goal_a_sensor.begin=goal_a_handler
 
-    offsetb=-6
+
     goal_b = [
         # vertical sensor
         RectObject(space, (width-wall_width-width_goal/2+offsetb, height/2), (width_goal, height_goal), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
         
         # tiang bawah
-        RectObject(space, (width-wall_width-width_tiang/2+offsetb, height/2+height_goal/2+height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
+        RectObject(space, grbc, (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100)),
 
         # tiang atas
-        RectObject(space, (width-wall_width-width_tiang/2+offsetb, height/2-height_goal/2-height_tiang/2), (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
+        RectObject(space, grtc, (width_tiang, height_tiang), 1, 0.4, 500, isDynamic=False, color=(225, 225, 225, 100))
     ]
 
     goal_b[0].shape.collision_type=CollisionType.GOAL_B.value
     # print(ball.shape.collision_type, goal_b[0].shape.collision_type)
     goal_b_sensor = space.add_collision_handler(ball.shape.collision_type, goal_b[0].shape.collision_type)
     goal_b_sensor.begin=goal_b_handler
+
+    # anti ballz stucc
+    make_slopes(space, width, height, 35, 10, grtc, grbc, gltc, glbc, width_tiang)
 
 
     ## === TEAM A === LEFT IS THE RIGHT SIDE!
@@ -683,7 +742,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =60.0 # reset
+    max_ronde_time =40.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -701,7 +760,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     player_index = 0 if asA else 3
     player_cek = [[player_index, player]]
 
-    # fit fit kalo mendekat dapet boolean 1 menjauh no point, karna spawn bisa deket bisa jauh, gak ku normalize juga, boolean aja
+    # termination algo biar cepet
     prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
 
     forceQuit=False
@@ -729,7 +788,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 10, True)
+        bola_is_gerak = check_velocity(ball.body.velocity, 2, True)
         
         # CATCH BOLA diem lama
         if(bola_is_gerak):
@@ -746,7 +805,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
         pygame.display.update()
         clock.tick(fps)
 
-        # update fitness
         cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
         # karang malah menjauh, but cek if bola gerak
         if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
@@ -774,8 +832,8 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # endgame_fitness() no move ga dikasi reward
             isRun=False
             # punish!!!!!!!!!!
-            fitness_recorder['A']-=10000
-            fitness_recorder['B']-=10000
+            fitness_recorder['A']-=11000
+            fitness_recorder['B']-=11000
             # print('no move, faster detect time out')
             # ga usah di punish
         else:
@@ -787,51 +845,55 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(isOutOfBound):
             isRun=False
             # punish
-            fitness_recorder['A'] -=1000
-            fitness_recorder['B'] -=1000
+            fitness_recorder['A'] -=11000
+            fitness_recorder['B'] -=11000
             print('out of bound')
 
         # jika time out dan bola udah gak gerak
         if (time.perf_counter()-ronde_time) > max_ronde_time and not bola_is_gerak:
             isRun=False
             # punish
-            fitness_recorder['A'] -= 10000
-            fitness_recorder['B'] -= 10000
+            fitness_recorder['A'] -= 11000
+            fitness_recorder['B'] -= 11000
             print('time out! PUNISH TO THE HELL kalo kalah')
             break
     ### === END OF WHILE LOOP === ###
 
-    # calculate sisa fitness tim A & B + individu
-    # makin deket bola makin bagus
-    fitness_goalz = calculate_ball_goal_fitness(opo_goal[0], ball)*(solo_touch_ball_counter > 0)
-    genomes[0][1].fitness += fitness_goalz
-    # if(fitness_goalz != 0):
-    # print('---start--')
-    # print('goalz', fitness_goalz)
+    # hitung jarak ke gol
+    distance_to_goal = calculate_distance(ball.body.position, opo_goal[0].body.position)
+    norm_distance = distance_to_goal/max_distance_possible * 100
+    # ceritanya hitung MSE, tapi negatif, makin gede distance makin kecil
+    sqe = (norm_distance*norm_distance)
+    if(solo_touch_ball_counter == 0):
+        sqe = 10000
 
+    # gak ke pake tapi
     genomes[0][1].nendang += solo_touch_ball_counter
-    # if(genomes[0][1].nendang != 0):
-        # print(genomes[0][1].nendang, 'ndang')
 
-    # bonus time ngegol
+    # bonus time ngegol + fix sqe
     if(game_phase == GamePhase.JUST_GOAL):
         if(asA and score_data['A'] > score_data['B']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            print('a ngegol')
-            # print(fitness_time_goal)
+            sqe = 0
+            print('aman')
+
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            print('b ngegol')
-            # print(fitness_time_goal)
+            sqe=0
+            print('aman')
+
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
-            print('gol bunuh diri')
-        # print('---end---')
+            print('kampret og')
+
         genomes[0][1].fitness += fitness_time_goal
     
+    # tambah sqe yg uda di proses
+    genomes[0][1].sqe_dis2_goal.append(sqe)
+
     # remove object from space? or just remove space
     for obj in space.bodies:
         space.remove(obj)
@@ -863,36 +925,77 @@ def make_teams(genomes):
         id=new_id
     return teams
 
+import pickle
 def eval_genomes(genomes, config):
     set_fitness_val(genomes)
     # total_repeat = 3 # ganti jadi banyak in a row
     genome_pengegol = []
-    best_fitness = 0.0
+    best_fitness = -100000000
     best_id = 0
     total_fitness = 0.0
     for id_genome in range(len(genomes)):
         genomes[id_genome][1].ngegol = 0
         genomes[id_genome][1].nendang = 0
         genomes[id_genome][1].own_goal = 0
-        asA = True
-        prev_goal = -1
+        genomes[id_genome][1].sqe_dis2_goal = []
+        
+        prev_nendang = 0
+        prev_og = 0
+        prev_goal = 0
         counter = 0
-        while(prev_goal < genomes[id_genome][1].ngegol and genomes[id_genome][1].ngegol < 101):
-            if(counter % 3 == 2):
-                prev_goal +=1
-            
+        max_try = 1000
+        hasChance=True
+        max_patience = 2
+        patience_count=0
+
+        while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
             counter+=1
             # do 1 game
-            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, asA)
+            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
+            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
             if(fq):break
-            # repeat ganti team
-            asA = not asA
+            
+            if(genomes[id_genome][1].ngegol > prev_goal):
+                patience_count = 0
+            else:
+                patience_count+=1
+            
+            if(patience_count == max_patience):
+                hasChance=False
+                print('reach patience')
+            else:
+                hasChance=True
+            
+            nendang_score = (genomes[id_genome][1].nendang - prev_nendang) * 150
+            if(genomes[id_genome][1].own_goal == prev_og > nendang_score):
+                nendang_score *= -1
+
+            genomes[id_genome][1].fitness += nendang_score
+            prev_nendang = genomes[id_genome][1].nendang
+            prev_og = genomes[id_genome][1].own_goal
+        
+        
+        # calculate additional fitness
+        gol_score = genomes[id_genome][1].ngegol*5000
+        own_goal_score = genomes[id_genome][1].own_goal*-11000
+        neg_mse = np.mean(genomes[id_genome][1].sqe_dis2_goal)*-1
+        
+        genomes[id_genome][1].fitness += own_goal_score  + neg_mse + gol_score
+        genomes[id_genome][1].neg_mse = neg_mse
         
         if(genomes[id_genome][1].ngegol > 0):
-            print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
-            genome_pengegol.append(id_genome)
-        
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*3500 - genomes[id_genome][1].own_goal*10000 + genomes[id_genome][1].nendang*500
+            print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol')
+            print('stat:')
+            seenome = genomes[id_genome][1]
+            print('|gol:', seenome.ngegol, '|og:', seenome.own_goal,'|kc', seenome.nendang,
+            '\n|neg_mse:', seenome.neg_mse, 'ft:', seenome.fitness, 'std_sqe:', np.std(seenome.sqe_dis2_goal))
+
+            
+            if(genomes[id_genome][1].ngegol > 75):
+                with open(f'genome_pengegol_{id_genome}_{genomes[id_genome][1].ngegol}.pkl','wb') as mfile:
+                    pickle.dump(genomes[id_genome], mfile)
+                    mfile.close()
+                    print('saved gol:', genomes[id_genome][1].ngegol)
 
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
@@ -904,7 +1007,7 @@ def eval_genomes(genomes, config):
     print('best:', best_fitness)
     print('stat:')
     bgenome = genomes[best_id][1]
-    print('gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'|ndang', bgenome.nendang)      
+    print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.sqe_dis2_goal,'\n|neg_mse:', bgenome.neg_mse)      
 
 
 
@@ -922,6 +1025,9 @@ def run(config_file):
         winner.fitness=0.0
         game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
         # break
+
+
+
 
 
 if __name__ == '__main__':

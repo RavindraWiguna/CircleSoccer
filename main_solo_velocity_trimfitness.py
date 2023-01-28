@@ -944,9 +944,12 @@ def eval_genomes(genomes, config):
         
         prev_nendang = 0
         prev_og = 0
+        prev_goal = 0
         counter = 0
         max_try = 1000
         hasChance=True
+        max_patience = 2
+        patience_count=0
 
         while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
             counter+=1
@@ -955,7 +958,17 @@ def eval_genomes(genomes, config):
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
             if(fq):break
             
-            hasChance = genomes[id_genome][1].nendang > prev_nendang
+            if(genomes[id_genome][1].ngegol > prev_goal):
+                patience_count = 0
+            else:
+                patience_count+=1
+            
+            if(patience_count > max_patience):
+                hasChance=False
+                # print('reach patience')
+            else:
+                hasChance=True
+                # print('lanjut')
             
             nendang_score = (genomes[id_genome][1].nendang - prev_nendang) * 150
             if(genomes[id_genome][1].own_goal == prev_og > nendang_score):
@@ -964,6 +977,7 @@ def eval_genomes(genomes, config):
             genomes[id_genome][1].fitness += nendang_score
             prev_nendang = genomes[id_genome][1].nendang
             prev_og = genomes[id_genome][1].own_goal
+            prev_goal = genomes[id_genome][1].ngegol
         
         
         # calculate additional fitness
@@ -999,6 +1013,7 @@ def eval_genomes(genomes, config):
     print('stat:')
     bgenome = genomes[best_id][1]
     print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.sqe_dis2_goal,'\n|neg_mse:', bgenome.neg_mse)      
+
 
 
 
