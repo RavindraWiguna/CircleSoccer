@@ -37,7 +37,7 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 4
+max_touch = 2
 max_drible = 3
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
 # males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
@@ -723,8 +723,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
         keys = pygame.key.get_pressed()
         if(keys[pygame.K_SPACE]):
             doVisualize=True
-        
-        existMovement=False
 
         # gerakin player
         the_input = make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant)
@@ -743,9 +741,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 2.0):
-                draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-                pygame.display.update()
+            if(time.perf_counter() - bola_stay_time > 0.6):
+                # draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
+                # pygame.display.update()
                 max_ronde_time = 0.0
                 # print('0.5s in real time diem', iter_to_touch)
 
@@ -777,14 +775,14 @@ def game(window, width, height, genomes, config, doRandom, asA):
         
         # same, check termination
         existMovement=checkAllStandStill(player_cek, ball, True)
-        if(not existMovement and game_phase != GamePhase.KICKOFF):
+        if(not existMovement):
             # lsg break
             # endgame_fitness() no move ga dikasi reward
             isRun=False
             # punish!!!!!!!!!!
-            fitness_recorder['A']-=500
-            fitness_recorder['B']-=500
-            # print('no move')
+            fitness_recorder['A']-=10000
+            fitness_recorder['B']-=10000
+            # print('no move, faster detect time out')
             # ga usah di punish
         else:
             game_phase=GamePhase.Normal
@@ -885,8 +883,8 @@ def eval_genomes(genomes, config):
         asA = True
         prev_goal = -1
         counter = 0
-        while(prev_goal < genomes[id_genome][1].ngegol):
-            if(counter % 2 == 1):
+        while(prev_goal < genomes[id_genome][1].ngegol and genomes[id_genome][1].ngegol < 101):
+            if(counter % 3 == 2):
                 prev_goal +=1
             
             counter+=1
@@ -900,7 +898,7 @@ def eval_genomes(genomes, config):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
             genome_pengegol.append(id_genome)
         
-        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*3500 - genomes[id_genome][1].own_goal*10000
+        genomes[id_genome][1].fitness += genomes[id_genome][1].ngegol*3500 - genomes[id_genome][1].own_goal*10000 + genomes[id_genome][1].nendang*500
 
         if(best_fitness < genomes[id_genome][1].fitness):
             best_id = id_genome
@@ -912,7 +910,7 @@ def eval_genomes(genomes, config):
     print('best:', best_fitness)
     print('stat:')
     bgenome = genomes[best_id][1]
-    print('gol:', bgenome.ngegol, '|og:', bgenome.own_goal)      
+    print('gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'|ndang', bgenome.nendang)      
 
 
 
@@ -923,15 +921,15 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    # p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
 
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-72')
-    p.config=config
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-186')
+    # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
