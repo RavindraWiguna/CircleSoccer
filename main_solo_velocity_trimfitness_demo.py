@@ -736,7 +736,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 0.6):
+            if(time.perf_counter() - bola_stay_time > 6.0):
                 # draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
                 # pygame.display.update()
                 max_ronde_time = 0.0
@@ -818,17 +818,17 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(asA and score_data['A'] > score_data['B']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            # print('a ngegol')
+            print('a ngegol')
             # print(fitness_time_goal)
         elif(not asA and score_data['B'] > score_data['A']):
             fitness_time_goal = (1/total_iter)*100000
             genomes[0][1].ngegol += 1
-            # print('b ngegol')
+            print('b ngegol')
             # print(fitness_time_goal)
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
-            # print('gol bunuh diri')
+            print('gol bunuh diri')
         # print('---end---')
         genomes[0][1].fitness += fitness_time_goal
     
