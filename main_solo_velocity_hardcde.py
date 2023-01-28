@@ -99,7 +99,6 @@ def create_boundaries(space, width, height, bwidth):
         space.add(body, shape)
         shape.collision_type=coltype
 
-
 def make_slopes(space, width, height, n, bwidth, goal_right_top, goal_right_bottom, goal_left_top, goal_left_bottom, width_tiang):    
     const_val = n+bwidth
 
@@ -606,14 +605,14 @@ def game(window, width, height, genomes, config, doRandom, asA):
            SPAWN GAME'S OBJECTS
     ======================================
     '''
+    # GAME'S BALL
+    ball = Ball(space, (width/2, height/2))
+    ball.shape.collision_type=CollisionType.BALL.value
+
     # BORDER FOR BOUNCE
     wall_width=50
     create_boundaries(space, width, height, wall_width)
     wall_width=4
-    
-    # GAME'S BALL
-    ball = Ball(space, (width/2, height/2))
-    ball.shape.collision_type=CollisionType.BALL.value
      
     # GOALS variable
     height_goal = 175
@@ -721,28 +720,12 @@ def game(window, width, height, genomes, config, doRandom, asA):
         kick_player(player)
 
     '''
-    ====================
-       Making 1 models
-    ====================
-    '''
-
-    team_net = [
-        (neat.nn.RecurrentNetwork.create(genomes[0][1], config), genomes[0]),
-    ]
-
-    # initlaize fitness
-    for genomeid, genome in genomes:
-        initialize_fitness(genome)
-
-
-    '''
     ========================
             MAIN LOOP
     ========================
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =4.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -753,24 +736,17 @@ def game(window, width, height, genomes, config, doRandom, asA):
     solo_touch_ball_counter=0
     iter_to_touch=1
 
-    # get player, self goal, opo goal, team, etc
-    net, genome = team_net[0]
     player, self_team, opo_team, self_goal, opo_goal = get_player_team_goal(team_A, team_B, goal_a, goal_b, asA)
-    
-    player_index = 0 if asA else 3
-    player_cek = [[player_index, player]]
-
-    # termination algo biar cepet
-    prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
 
     forceQuit=False
     total_iter = 1
-    bola_stay_time = time.perf_counter()
+    ballNeverMove=True
+    ball_prev_pos = ball.body.position
+    bola_stay_time=time.perf_counter()
     ronde_time = time.perf_counter()
     while isRun:
         total_iter+=1
         iter_to_touch+=1
-        doVisualize=False
         isHitWall = [0]*24
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
@@ -778,46 +754,38 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 isRun=False
                 print('force quit')
                 break
-        
-        keys = pygame.key.get_pressed()
-        if(keys[pygame.K_SPACE]):
-            doVisualize=True
 
         # gerakin player
-        the_input = make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant)
+        Vx = ball.body.position[0] - player.body.position[0]
+        Vy = ball.body.position[1] - player.body.position[1]
         # output probability action
-        output = net.activate(the_input)
-        process_output(output, genome, player)
+        output = [Vx, 0, Vy, 0]
+        process_output(output, None, player)
         
         # update world and graphics
         for _ in range(step):
             space.step(dt)
-        
-        bola_is_gerak = check_velocity(ball.body.velocity, 2, True)
-        
-        # CATCH BOLA diem lama
-        if(bola_is_gerak):
-            bola_stay_time = time.perf_counter()
+
+        draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, True)
+        pygame.display.update()
+        clock.tick(fps)
+
+        dis_prev_now = calculate_distance(ball.body.position, ball_prev_pos)
+        if(ballNeverMove):
+            if(dis_prev_now > 1):
+                ballNeverMove=False
         else:
-            # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 0.6):
-                # draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-                # pygame.display.update()
-                max_ronde_time = 0.0
-                # print('0.5s in real time diem', iter_to_touch)
+            # pernah gerak
+            if(dis_prev_now < 2.0):
+                if(time.perf_counter() - bola_stay_time > 1.0):
+                    print('STUCC')
+                    break
+            else:
+                bola_stay_time=time.perf_counter()
 
-        if(doVisualize):
-            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-            pygame.display.update()
-            # clock.tick(fps)
+        # update ballz prev pos
+        ball_prev_pos=ball.body.position
 
-        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
-        # karang malah menjauh, but cek if bola gerak
-        if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
-            if(cur_distance_ball > 200):# kalo di bawah 100 gpp menjauh dikit
-                isRun = False
-            
-        prev_distance_ball = cur_distance_ball
         # check termination
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -831,72 +799,16 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 print('get to 1 goal stop')
                 break
         
-        # same, check termination
-        existMovement=checkAllStandStill(player_cek, ball, True)
-        if(not existMovement):
-            # lsg break
-            # endgame_fitness() no move ga dikasi reward
-            isRun=False
-            # punish!!!!!!!!!!
-            fitness_recorder['A']-=11000
-            fitness_recorder['B']-=11000
-            # print('no move, faster detect time out')
-            # ga usah di punish
-        else:
-            game_phase=GamePhase.Normal
+        
+        game_phase=GamePhase.Normal
 
         # cek apakah out o bound
         objs = [ball, player]
         isOutOfBound = out_of_bound_check(objs, width, height)
         if(isOutOfBound):
             isRun=False
-            # punish
-            fitness_recorder['A'] -=11000
-            fitness_recorder['B'] -=11000
             print('out of bound')
-
-        # jika time out dan bola udah gak gerak
-        if (time.perf_counter()-ronde_time) > max_ronde_time and not bola_is_gerak:
-            isRun=False
-            # punish
-            fitness_recorder['A'] -= 11000
-            fitness_recorder['B'] -= 11000
-            print('time out! PUNISH TO THE HELL kalo kalah')
-            break
     ### === END OF WHILE LOOP === ###
-
-    # hitung jarak ke gol
-    distance_to_goal = calculate_distance(ball.body.position, opo_goal[0].body.position)
-    norm_distance = distance_to_goal/max_distance_possible * 100
-    # ceritanya hitung MSE, tapi negatif, makin gede distance makin kecil
-    sqe = (norm_distance*norm_distance)
-    if(solo_touch_ball_counter == 0):
-        sqe = 10000
-
-    # gak ke pake tapi
-    genomes[0][1].nendang += solo_touch_ball_counter
-
-    # bonus time ngegol + fix sqe
-    if(game_phase == GamePhase.JUST_GOAL):
-        if(asA and score_data['A'] > score_data['B']):
-            fitness_time_goal = (1/total_iter)*100000
-            genomes[0][1].ngegol += 1
-            sqe = 0 
-
-        elif(not asA and score_data['B'] > score_data['A']):
-            fitness_time_goal = (1/total_iter)*100000
-            genomes[0][1].ngegol += 1
-            sqe=0
-
-        else:
-            fitness_time_goal=0.0
-            genomes[0][1].own_goal +=1
-
-        genomes[0][1].fitness += fitness_time_goal
-    
-    # tambah sqe yg uda di proses
-    genomes[0][1].squared_error_bola_gawang.append(sqe)
-
     # remove object from space? or just remove space
     for obj in space.bodies:
         space.remove(obj)
@@ -907,124 +819,10 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # pygame.quit()
     return forceQuit
 
-def set_fitness_val(genomes, val=0.0):
-    for gid, genome in genomes:
-        genome.fitness= val
-
-def create_team(genomes, id):
-    if(id + 3 <= len(genomes)):
-        return genomes[id:id+3], id+3
-    else:
-        print('nanggung..., skip aja males mikir')
-        return None, len(genomes)
-
-def make_teams(genomes):
-    teams = []
-    id = 0
-    while id < len(genomes):
-        team, new_id = create_team(genomes, id)
-        if(team):
-            teams.append(team)
-        id=new_id
-    return teams
-
-def eval_genomes(genomes, config):
-    set_fitness_val(genomes)
-    # total_repeat = 3 # ganti jadi banyak in a row
-    genome_pengegol = []
-    best_fitness = -100000000
-    best_id = 0
-    total_fitness = 0.0
-    for id_genome in range(len(genomes)):
-        genomes[id_genome][1].ngegol = 0
-        genomes[id_genome][1].nendang = 0
-        genomes[id_genome][1].own_goal = 0
-        genomes[id_genome][1].squared_error_bola_gawang = []
-        prev_nendang = 0
-        counter = 0
-        max_try = 1000
-        hasChance=True
-        while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
-            counter+=1
-            # do 1 game
-            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
-            fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
-            if(fq):break
-            
-            hasChance = genomes[id_genome][1].nendang > prev_nendang
-            prev_nendang = genomes[id_genome][1].nendang
-        
-        if(genomes[id_genome][1].ngegol > 0):
-            print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol :', genomes[id_genome][1].ngegol)
-        
-        # calculate additional fitness
-        gol_score = genomes[id_genome][1].ngegol*5000
-        own_goal_score = genomes[id_genome][1].own_goal*-11000
-        neg_mse = np.mean(genomes[id_genome][1].squared_error_bola_gawang)*-1
-        genomes[id_genome][1].fitness += own_goal_score  + neg_mse + gol_score
-        genomes[id_genome][1].neg_mse = neg_mse
-        
-        if(best_fitness < genomes[id_genome][1].fitness):
-            best_id = id_genome
-            best_fitness = genomes[id_genome][1].fitness
-
-        total_fitness += genomes[id_genome][1].fitness
-
-    # # fix nilai
-    print('best:', best_fitness)
-    print('stat:')
-    bgenome = genomes[best_id][1]
-    print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.squared_error_bola_gawang,'\n|neg_mse:', bgenome.neg_mse)      
-
-
-
-def run(config_file):
-    # Load configuration.
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_file)
-
-    # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
-
-    # # Add a stdout reporter to show progress in the terminal.
-
-    # Run for up to 300 generations.
-    import pickle
-    # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-59')
-    # p.config=config
-     
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(30))
-    try:
-        winner = p.run(eval_genomes, 1000)
-        with open('winner_vel_fit.pkl', 'wb') as mfile:
-            pickle.dump(winner, mfile)
-            mfile.close()
-            print('FINISHED')
-    except KeyboardInterrupt:
-        print('voila')
-
-    visualize.plot_stats(p.reporters.reporters[1], ylog=False, view=True)
-    visualize.plot_species(p.reporters.reporters[1], view=True)
-
-
-
-    with open('pop_vel_fit.pkl', 'wb') as mfile:
-        pickle.dump(p, mfile)
-        mfile.close()
-        print('save population')
-
 
 
 if __name__ == '__main__':
-    # Determine path to configuration file. This path manipulation is
-    # here so that the script will run successfully regardless of the
-    # current working directory.
-    local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, './neatUtils/config-neat-vel-fit')
-    run(config_path)
-    pygame.quit()
+    asA = True
+    while True:
+        asA=not asA
+        game(window, WIDTH, HEIGHT, None, None, True, asA)
