@@ -1088,10 +1088,8 @@ def eval_genomes(genomes, config):
         
         if(genomes[id_genome][1].ngegol > 0):
             print('genome ke:',id_genome, f'|id:{genomes[id_genome][0]}', 'ngegol')
-            print('stat:')
             seenome = genomes[id_genome][1]
-            print('|gol:', seenome.ngegol, '|og:', seenome.own_goal,'|kc', seenome.nendang,
-            '\n|neg_mse:', seenome.neg_mse, 'ft:', seenome.fitness, 'std_sqe:', np.std(seenome.sqe_dis2_goal))
+            print('|gol:', seenome.ngegol, '|og:', seenome.own_goal,'|kc', seenome.nendang)
 
             
             if(genomes[id_genome][1].ngegol > 75):
@@ -1113,8 +1111,6 @@ def eval_genomes(genomes, config):
     print('|gol:', bgenome.ngegol, '|og:', bgenome.own_goal,'\n|kc', bgenome.nendang, '|sqe:', bgenome.sqe_dis2_goal,'\n|neg_mse:', bgenome.neg_mse)      
 
 
-
-
 def run(config_file):
     # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
@@ -1122,14 +1118,14 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
+    p = neat.Population(config)
 
     # # Add a stdout reporter to show progress in the terminal.
 
     # Run for up to 300 generations.
     import pickle
     # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-148')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-148')
     # p.config=config
      
     p.add_reporter(neat.StdOutReporter(True))
