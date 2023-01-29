@@ -30,7 +30,9 @@ SCORE_FONT = pygame.font.SysFont('magneto', 40)
 score_data = {'A':0,'B':0}
 game_phase = GamePhase.Normal
 
-
+### === neat === #
+just_sentuh=False
+isHitWall=[0]*36
 ### === PYMUNK SETUP === ###
 # make space where we will simulate
 space = pymunk.Space()
@@ -431,7 +433,7 @@ def check_ball_ngeliwat_gawang(ball, width, width_tiang):
 
 def player_is_gerak_menjauh(player, ball, threshold_player_vel, threshold_angle, threshold_ok_distance):
     angle_vec = get_ball_vec_angle(player) # trick player as a ball
-    angle_goal = get_ball_to_goal_angle(player, ball) # trick ball as goal
+    angle_goal = get_ball_to_target_angle(player, ball) # trick ball as goal
     dtetha = calculate_diff_angle(angle_goal, angle_vec, False)
     if(dtetha > threshold_angle and check_velocity(player.body.velocity, threshold_player_vel, True)):
         distance_to_ball = calculate_distance(player.body.position, ball.body.position)
@@ -579,9 +581,9 @@ def get_ball_vec_angle(ball):
     angle = calculate_angle((0,0), (Vx, Vy))
     return angle
 
-def get_ball_to_goal_angle(ball, opo_goal):
+def get_ball_to_target_angle(ball, target):
     Px, Py = ball.body.position
-    gPx, gPy = opo_goal.body.position
+    gPx, gPy = target
     angle = calculate_angle((Px, Py), (gPx, gPy))
     return angle
 
@@ -606,7 +608,7 @@ def process_output(output, player):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch, just_sentuh
+    global game_phase, score_data, just_sentuh, isHitWall
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -733,7 +735,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     cut = 0.1
     sisa = 1-cut
     ball_to_wp_init_distance = 256
-    max_iter_wp = 332
+    max_iter_wp = 720 # 30/(1/120*5) basically 30 detik in real life udah harus kena
     counter_iter_to_wp = 0
     wp_threshold_disance = 16
     min_x, min_y, max_x, max_y = width*cut, height*cut, width*sisa, height*sisa
@@ -774,6 +776,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     
     player_index = 0 if asA else 3
     player_cek = [[player_index, player]]
+
+    # correct angle var
+    total_touching=0
 
 
     forceQuit=False
@@ -830,7 +835,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             # sampai, ganti target
             target_wp = get_random_wp(ball, ball_to_wp_init_distance, min_x, min_y, max_x, max_y)
             # tambah fitness
-            genomes[0][1].fitness += wp_threshold_disance + (1/total_iter)*10000
+            genomes[0][1].fitness += wp_threshold_disance + (1/total_iter)*80000
 
             # reset hitungan
             counter_iter_to_wp = 0
@@ -838,13 +843,37 @@ def game(window, width, height, genomes, config, doRandom, asA):
             print(f'reached wp #{wpke}')
             wpke+=1
 
+        # FITNESS INSIDE LOOP (DANGER VIN, BUT I BELIEVE IN MATH), fitnes kalo nendang ke arah bener dapt bons
+        if(just_sentuh):
+            just_sentuh=False
+            total_touching+=1
+            angle_vec = get_ball_vec_angle(ball)
+            angle_goal = get_ball_to_target_angle(ball, target_wp)
+            dtetha = calculate_diff_angle(angle_goal, angle_vec, False)
+            double_dtetha = dtetha*2
+            if(double_dtetha < np.pi):
+                # fancy way detect < pi/2 is 2* < pi
+                # bonus bener nendang:
+                bonus_bener_nendang = 1 - double_dtetha/np.pi
+                fitnesfied = bonus_bener_nendang * (total_touching < 30) # di cap
+                genomes[0][1].fitness += fitnesfied
 
+
+        # terminate jika pada diem
         existMovement=checkAllStandStill(player_cek, ball, True)
         if(not existMovement):
             # lsg break
             isRun=False
             # print('no move')
-            genomes[0][1].fitness -= 500
+            genomes[0][1].fitness -= 1000
+        
+        # cek termination by player ngejauh by angle
+        player_isGettingFurther = player_is_gerak_menjauh(player, ball, 2.0, np.pi*0.75, 200)
+        # alasan gak isRUn=player is bla bla, takutnya isRun udah di set false entah di kode atas right now or in the future
+        if(player_isGettingFurther): 
+            genomes[0][1].fitness -= 1000
+            # print('menjauh')
+            isRun=False
 
     ### === END OF WHILE LOOP === ###
 
