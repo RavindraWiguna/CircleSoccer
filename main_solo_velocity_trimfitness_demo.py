@@ -1118,12 +1118,13 @@ def run(config_file):
 
     import pickle
     asA=True
-    # winner = pickle.load(open('winner_vel_fit.pkl', 'rb'))
-    p = pickle.load(open('pop_vel_fit.pkl', 'rb'))
-    winner = p.best_genome
+    winner = pickle.load(open('genome_pengegol_294_101.pkl', 'rb'))[1]
+    # p = pickle.load(open('pop_vel_fit.pkl', 'rb'))
+    # winner = p.best_genome
     while True:
         asA=not asA
         winner.fitness=0.0
+        winner.sqe_dis2_goal = []
         game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
         # break
 

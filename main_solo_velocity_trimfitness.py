@@ -783,6 +783,13 @@ def game(window, width, height, genomes, config, doRandom, asA):
             ry = random.uniform(100, height-100)
             obj.body._set_position((rx, ry))
 
+    # ball random
+    cut = 0.275
+    sisa = 1-cut
+    rx = random.uniform(width*cut, width*sisa)
+    ry = random.uniform(height*cut, height*sisa)
+    ball.body._set_position((rx, ry))
+
     # kick player
     if(asA):
         need_kick = [team_B[0]]
@@ -875,16 +882,18 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # FITNESS INSIDE LOOP (DANGER VIN, BUT I BELIEVE IN MATH), fitnes kalo nendang ke arah bener dapt bons
         if(just_sentuh):
             just_sentuh=False
-            angle_vec = get_ball_vec_angle(ball)
-            angle_goal = get_ball_to_goal_angle(ball, opo_goal[0])
-            dtetha = calculate_diff_angle(angle_goal, angle_vec, False)
-            double_dtetha = dtetha*2
-            if(double_dtetha < np.pi):
-                # fancy way detect < pi/2 is 2* < pi
-                # bonus bener nendang:
-                bonus_bener_nendang = 1 - double_dtetha/np.pi
-                fitnesfied = bonus_bener_nendang*10*(solo_touch_ball_counter < max_touch)
-                genomes[0][1].fitness += fitnesfied
+            isRun=False # belajar nyentuh
+            
+            # angle_vec = get_ball_vec_angle(ball)
+            # angle_goal = get_ball_to_goal_angle(ball, opo_goal[0])
+            # dtetha = calculate_diff_angle(angle_goal, angle_vec, False)
+            # double_dtetha = dtetha*2
+            # if(double_dtetha < np.pi):
+            #     # fancy way detect < pi/2 is 2* < pi
+            #     # bonus bener nendang:
+            #     bonus_bener_nendang = 1 - double_dtetha/np.pi
+            #     fitnesfied = bonus_bener_nendang*10*(solo_touch_ball_counter < max_touch) # di cap
+            #     genomes[0][1].fitness += fitnesfied
 
 
         # cek time out based by ball
@@ -904,9 +913,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             genomes[0][1].fitness -= 11000
             # print('menjauh')
             isRun=False
-        else:
-            genomes[0][1].fitness += 0.1
-
+        
         # cek termination by bola ngeliwat gawang
         ball_isNgeliwat = check_ball_ngeliwat_gawang(ball, width, width_tiang)
         if(ball_isNgeliwat):
