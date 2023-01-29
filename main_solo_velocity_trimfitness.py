@@ -902,7 +902,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # alasan gak isRUn=player is bla bla, takutnya isRun udah di set false entah di kode atas right now or in the future
         if(player_isGettingFurther): 
             genomes[0][1].fitness -= 11000
-            print('menjauh')
+            # print('menjauh')
             isRun=False
         else:
             genomes[0][1].fitness += 0.1
