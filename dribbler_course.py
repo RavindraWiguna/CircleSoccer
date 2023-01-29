@@ -598,6 +598,7 @@ def cap_magnitude(val, max_val, min_val):
 def process_output(output, player):
     addVx = output[0] - output[1]
     addVy = output[2] - output[3]
+    # print(output)
     addVx*=10
     addVy*=10 # biar gampangan cpet
     player.change_velocity(addVx, addVy)
@@ -777,6 +778,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
 
     forceQuit=False
     total_iter = 1
+    wpke=1
     ronde_time = time.perf_counter()
     while isRun:
         total_iter+=1
@@ -797,7 +799,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         the_input = make_data_masuk_dribble(player, ball, target_wp)
         # output probability action
         output = net.activate(the_input)
-        process_output(output, player, not asA)
+        process_output(output, player)
         
         # update world and graphics
         for _ in range(step):
@@ -806,6 +808,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         if(doVisualize):
             clear_screen(window)
             draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
+            pygame.draw.circle(window, (200, 20, 20), target_wp, wp_threshold_disance)
             pygame.display.update()
             # clock.tick(fps)
 
@@ -817,6 +820,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 isRun=False
                 # kurangi fitness
                 genomes[0][1].fitness -= distance_ball_target
+                # print('time out target')
             
             else:
                 # masih belum time out, counting
@@ -830,7 +834,17 @@ def game(window, width, height, genomes, config, doRandom, asA):
 
             # reset hitungan
             counter_iter_to_wp = 0
+            total_iter=0
+            print(f'reached wp #{wpke}')
+            wpke+=1
 
+
+        existMovement=checkAllStandStill(player_cek, ball, True)
+        if(not existMovement):
+            # lsg break
+            isRun=False
+            # print('no move')
+            genomes[0][1].fitness -= 500
 
     ### === END OF WHILE LOOP === ###
 
@@ -858,8 +872,8 @@ def eval_genomes(genomes, config):
     total_fitness = 0.0
     for id_genome in range(len(genomes)):
         train_genom = genomes[id_genome]
-        game(window, WIDTH, HEIGHT, train_genom, config, True, True)
-        game(window, WIDTH, HEIGHT, train_genom, config, True, False)
+        game(window, WIDTH, HEIGHT, [train_genom], config, True, True)
+        game(window, WIDTH, HEIGHT, [train_genom], config, True, False)
 
 
 def run(config_file):
