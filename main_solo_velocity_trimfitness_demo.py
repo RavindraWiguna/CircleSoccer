@@ -38,11 +38,12 @@ ronde_time = time.perf_counter()
 solo_touch_ball_counter=0
 iter_to_touch = 1
 multiplier_fitness_iter_touch = 500
-max_touch = 5
+max_touch = 50
 max_drible = 3
+just_sentuh=False
 # list of 24 bool per list containing 4 boolean for 4 wall for 6 player tanda ngetouch
 # males ngehandle duplikat, takut ngappend modif list gonna ada bug (barengan?)
-isHitWall = [0]*24
+isHitWall = [0]*36 # (tambah 6*2 for gol kiri kanan)
 
 ### === PYMUNK SETUP === ###
 # make space where we will simulate
@@ -57,8 +58,10 @@ def draw_score(window, a, b):
     score_text = SCORE_FONT.render(f'{a:02d} : {b:02d}', 1, (16, 16, 16))
     window.blit(score_text, (WIDTH/2-85, 10))
 
-def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=False):
+def clear_screen(window):
     window.blit(bg, (0,0))
+
+def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=False):
     draw_score(window, score_data['A'], score_data['B'])
     
     if(isDebug):
@@ -67,9 +70,24 @@ def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=Fal
         for obj in objs:
             obj.draw(window)
 
+def draw_ball_vec_vel(window, ball):
+    Px, Py = ball.body.position
+    maxMag = max(abs(Vx), abs(Vy)) + 1
+    Vx /= maxMag
+    Vy /= maxMag
+    end_position = (Px + Vx*100, Py + Vy*100)
+    pygame.draw.line(window, (16, 128, 128), ball.body.position, end_position, 5)
+
+def draw_ball_to_goal_line(window, ball, opo_goal):
+    Px, Py = ball.body.position
+    gPx, gPy = opo_goal.body.position
+    distance = calculate_distance((Px, Py), (gPx, gPy))    
+    Dx = (gPx - Px)/distance
+    Dy = (gPy - Py)/distance
+    end_position = (Px + Dx*100, Py + Dy*100)
+    pygame.draw.line(window, (16, 16, 16), ball.body.position, end_position, 5)
 
 ### === GAME SPECIFIC FUNCTIONS === ###
-
 def create_boundaries(space, width, height, bwidth):
     # format: cx,cy, w,h
     mid_width = width/2
@@ -183,13 +201,14 @@ def goal_b_handler(arbiter, space, data):
     return True
 
 def ball_touch_handler(collision_type_toucher, arbiter, space, data):
-    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch
+    global fitness_recorder, last_ball_toucher_id, second_last_toucher, ronde_time, solo_touch_ball_counter, iter_to_touch, just_sentuh
     
     if(not fitness_recorder.__contains__(collision_type_toucher)):
         fitness_recorder[collision_type_toucher]=0
     
     # print(collision_type_toucher, 'touch the ball')
     # fitness_recorder[collision_type_toucher]
+    just_sentuh=True #ONLY WORK IF SOLO, karna 1 yg di observe
     solo_touch_ball_counter+=1
     solo_touch_ball_counter = min(max_touch, solo_touch_ball_counter)
     if(solo_touch_ball_counter < max_touch):
@@ -283,6 +302,8 @@ top_wall_hit_handler    = partial(wall_collision_handler, 0)
 bottom_wall_hit_handler = partial(wall_collision_handler, 6)
 left_wall_hit_handler   = partial(wall_collision_handler, 12)
 right_wall_hit_handler  = partial(wall_collision_handler, 18)
+goal_a_hit_handler      = partial(wall_collision_handler, 24)
+goal_b_hit_handler      = partial(wall_collision_handler, 30)
 
 # make partial func for collision each player
 team_a1_twall_handler = partial(top_wall_hit_handler, 0)
@@ -312,6 +333,20 @@ team_a3_rwall_handler = partial(right_wall_hit_handler, 2)
 team_b1_rwall_handler = partial(right_wall_hit_handler, 3)
 team_b2_rwall_handler = partial(right_wall_hit_handler, 4)
 team_b3_rwall_handler = partial(right_wall_hit_handler, 5)
+
+team_a1_gawall_handler = partial(goal_a_hit_handler, 0)
+team_a2_gawall_handler = partial(goal_a_hit_handler, 1)
+team_a3_gawall_handler = partial(goal_a_hit_handler, 2)
+team_b1_gawall_handler = partial(goal_a_hit_handler, 3)
+team_b2_gawall_handler = partial(goal_a_hit_handler, 4)
+team_b3_gawall_handler = partial(goal_a_hit_handler, 5)
+
+team_a1_gbwall_handler = partial(goal_b_hit_handler, 0)
+team_a2_gbwall_handler = partial(goal_b_hit_handler, 1)
+team_a3_gbwall_handler = partial(goal_b_hit_handler, 2)
+team_b1_gbwall_handler = partial(goal_b_hit_handler, 3)
+team_b2_gbwall_handler = partial(goal_b_hit_handler, 4)
+team_b3_gbwall_handler = partial(goal_b_hit_handler, 5)
 
 # kalau tembok atas 1, bawah = 2, kiri = 4, kanan = 8, gak kena = 0 (semua bit mati) 
 # ( tapi ya gak mungkin semua bit nyala, atas bawah nyala impos)
@@ -368,14 +403,23 @@ def judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dir
 # player id udah include sama tim, 0-5
 def check_wall_hit_based_collision(player_id, player:Player):
     global isHitWall
-    topoff, botoff, leftoff, rightoff = 0,6,12,18
+    topoff, botoff, leftoff, rightoff, gaoff, gboff = 0,6,12,18, 24, 30
     dirX, dirY = player.direction
     isNabrakTop = isHitWall[topoff+player_id]==1 and (dirY==-1)
     isNabrakBottom = isHitWall[botoff+player_id]==1 and( dirY==1)
     isNabrakLeft = isHitWall[leftoff+player_id]==1 and (dirX == -1)
     isNabrakRight = isHitWall[rightoff+player_id]==1 and (dirX ==1)
     # print('c|', isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight,'|', dirX, dirY,'|', player.body.velocity)
-    return judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dirX, dirY)
+    classic_wall_hit = judge_wall_hit(isNabrakTop, isNabrakBottom, isNabrakLeft, isNabrakRight, dirX, dirY)
+    if(classic_wall_hit):
+        return classic_wall_hit
+
+    # goal judge
+    isNabrakGoalA = isHitWall[gaoff+player_id]==1 and (dirX == -1)
+    isNabrakGoalB = isHitWall[gboff+player_id]==1 and (dirX ==  1)
+
+    goal_hit = judge_wall_hit(False, False, isNabrakGoalA, isNabrakGoalB, dirX, dirY)
+    return goal_hit
 
 
 # make sur to check theez nut, imean coor
@@ -439,6 +483,23 @@ def checkAllStandStill(players, ball, doWallCheck):
 
     return existMovement
 
+def check_ball_ngeliwat_gawang(ball, width, width_tiang):
+    if(ball.body.position[0] <= width_tiang or ball.body.position[0] > (width-width_tiang)):
+        return True
+    
+    return False
+
+
+def player_is_gerak_menjauh(player, ball, threshold_player_vel, threshold_angle, threshold_ok_distance):
+    angle_vec = get_ball_vec_angle(player) # trick player as a ball
+    angle_goal = get_ball_to_goal_angle(player, ball) # trick ball as goal
+    dtetha = calculate_diff_angle(angle_goal, angle_vec, False)
+    if(dtetha > threshold_angle and check_velocity(player.body.velocity, threshold_player_vel, True)):
+        distance_to_ball = calculate_distance(player.body.position, ball.body.position)
+        if(distance_to_ball > threshold_ok_distance):
+            return True
+    
+    return False
 
 '''
 ==================
@@ -502,39 +563,38 @@ def get_position_distance(src_pos, dst_pos, constant):
     dy*=constant
     return [dx, dy]
 
-def make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, id_self, width, height, min_dim, norm_div, constant):
-    player = self_team[id_self]
-    # self team posv
-    self_pos_vel            = get_player_pos_vel(player.body, constant, norm_div)
+def make_data_masuk_solo(player, opo_goal, ball, width, needFlip):
+    vx, vy = player.body.velocity
+    px, py = player.body.position
+    Bvx, Bvy = ball.body.velocity
+    Bpx, Bpy = ball.body.position
+    Gpx, Gpy = opo_goal.body.position
 
+
+    if(needFlip):
+        # flip velocity x
+        vx *= -1
+        Bvx *= -1
+
+        # flip pos x
+        px = width-px
+        Bpx = width-Bpx
+        Gpx = width - Gpx
+
+    # self posv
+    self_pos_vel            = [px, py, vx, vy]
+    
     # ball posv dis
-    ball_data               = get_ball_pos_vel(ball, constant, norm_div)
-    ball_distance           = get_position_distance(player.body.position, ball.body.position, constant)
-
-    # wall dis
-    wall_data               = get_boundary_distance(player.body.position, width, height, constant)
-
-    # goals dis
-    opponent_goal_data      = get_position_distance(player.body.position, opo_goal[0].body.position, constant)
-    opponent_goal_tiang_l   = get_position_distance(player.body.position, opo_goal[1].body.position, constant)
-    opponent_goal_tiang_r   = get_position_distance(player.body.position, opo_goal[2].body.position, constant)
-
-    # goals dis
-    self_goal_data      = get_position_distance(player.body.position, self_goal[0].body.position, constant)
-    self_goal_tiang_l   = get_position_distance(player.body.position, self_goal[1].body.position, constant)
-    self_goal_tiang_r   = get_position_distance(player.body.position, self_goal[2].body.position, constant)
+    ball_data               = [Bpx, Bpy, Bvx, Bvy]
+    ball_to_player_dis           = [Bpx-px, Bpy-py]
 
     # ball to goal
-    opponent_goal_data_ball      = get_position_distance(ball.body.position, opo_goal[0].body.position, constant)
-    opponent_goal_tiang_l_ball   = get_position_distance(ball.body.position, opo_goal[1].body.position, constant)
-    opponent_goal_tiang_r_ball   = get_position_distance(ball.body.position, opo_goal[2].body.position, constant)
+    ball_to_gawang = [Gpx-Bpx, Gpy-Bpy] 
     
     bias=0.5
-
-    the_input = [*self_pos_vel, *ball_data, *ball_distance, *wall_data, 
-    *opponent_goal_data, *opponent_goal_tiang_l, *opponent_goal_tiang_r,
-    *opponent_goal_data_ball, *opponent_goal_tiang_l_ball, *opponent_goal_tiang_r_ball, 
-    *self_goal_data,*self_goal_tiang_l,*self_goal_tiang_r,bias]
+    the_input = [
+        *self_pos_vel, *ball_data, *ball_to_player_dis, *ball_to_gawang, bias
+    ]
     return the_input
 
 '''
@@ -552,9 +612,6 @@ def calculate_ball_fitness(player, ball):
     max_fitness = calculate_distance((0,0), (WIDTH, HEIGHT))
     fitness = 1 - final_distance_ball/max_fitness
     fitness *=17
-    # fitness = max_fitness - final_distance_ball
-    # print(max_fitness, final_distance_ball
-    # fitness /= 1000 # (karena main 6 ronde) # ku kecilin lgi
     return fitness
 
 def calculate_ball_goal_fitness(opo_goal, ball):
@@ -563,6 +620,17 @@ def calculate_ball_goal_fitness(opo_goal, ball):
     fitness = 1 - final_distance_goal/max_fitness
     fitness *=1000
     return fitness, final_distance_goal
+
+def get_ball_vec_angle(ball):
+    Vx, Vy = ball.body.velocity
+    angle = calculate_angle((0,0), (Vx, Vy))
+    return angle
+
+def get_ball_to_goal_angle(ball, opo_goal):
+    Px, Py = ball.body.position
+    gPx, gPy = opo_goal.body.position
+    angle = calculate_angle((Px, Py), (gPx, gPy))
+    return angle
 
 '''
 =================
@@ -574,11 +642,15 @@ def cap_magnitude(val, max_val, min_val):
     return val
 
 # get vx vy
-def process_output(output, genome, player):
+def process_output(output, player, needFlip):
     addVx = output[0] - output[1]
     addVy = output[2] - output[3]
     addVx*=10
     addVy*=10 # biar gampangan cpet
+
+    if(needFlip):
+        addVx *= -1
+
     player.change_velocity(addVx, addVy)
 
 def solve_players(players):
@@ -589,7 +661,7 @@ def solve_players(players):
 ### ==== MAIN FUNCTION ==== ###
 
 def game(window, width, height, genomes, config, doRandom, asA):
-    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch
+    global game_phase, score_data, last_ball_toucher_id, second_last_toucher, fitness_recorder, ronde_time, solo_touch_ball_counter, isHitWall, iter_to_touch, just_sentuh
     '''
     =============================
       PYGAME-PYMUNK LOOP SETUP
@@ -676,7 +748,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # collision type, function
         [[ball.shape.collision_type, team_a1_ball_handler], [CollisionType.WALL_TOP.value, team_a1_twall_handler], 
         [CollisionType.WALL_BOTTOM.value, team_a1_bwall_handler], [CollisionType.WALL_LEFT.value, team_a1_lwall_handler],
-        [CollisionType.WALL_RIGHT.value, team_a1_rwall_handler]],
+        [CollisionType.WALL_RIGHT.value, team_a1_rwall_handler], [CollisionType.GOAL_A.value, team_a1_gawall_handler], [CollisionType.GOAL_B.value, team_a1_gbwall_handler]],
     ]
     # add collision handler to space
     for i, player_collision_stuff in enumerate(team_A_sensors):
@@ -696,7 +768,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
         # collision type, function
         [[ball.shape.collision_type, team_b1_ball_handler], [CollisionType.WALL_TOP.value, team_b1_twall_handler], 
         [CollisionType.WALL_BOTTOM.value, team_b1_bwall_handler], [CollisionType.WALL_LEFT.value, team_b1_lwall_handler],
-        [CollisionType.WALL_RIGHT.value, team_b1_rwall_handler]],
+        [CollisionType.WALL_RIGHT.value, team_b1_rwall_handler],[CollisionType.GOAL_A.value, team_b1_gawall_handler], [CollisionType.GOAL_B.value, team_b1_gbwall_handler]],
     ]
 
     for i, player_collision_stuff in enumerate(team_B_sensors):
@@ -760,8 +832,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     player_index = 0 if asA else 3
     player_cek = [[player_index, player]]
 
-    # termination algo biar cepet
-    prev_distance_ball = calculate_distance(player.body.position, ball.body.position)
+    # termination helper
+    total_ngeliwat_gawang=0
+    max_ngeliwat_gawang=400
 
     forceQuit=False
     total_iter = 1
@@ -770,48 +843,75 @@ def game(window, width, height, genomes, config, doRandom, asA):
     while isRun:
         total_iter+=1
         iter_to_touch+=1
-        isHitWall = [0]*24
+        isHitWall = [0]*36
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
                 forceQuit=True
                 isRun=False
                 print('force quit')
                 break
-        
+
         # gerakin player
-        the_input = make_data_masuk_solo(self_team, opo_team, self_goal, opo_goal, ball, 0, width, height, min_dim, norm_div, constant)
+        the_input = make_data_masuk_solo(player, opo_goal[0], ball, width, not asA)
         # output probability action
         output = net.activate(the_input)
-        process_output(output, genome, player)
+        process_output(output, player, not asA)
         
         # update world and graphics
         for _ in range(step):
             space.step(dt)
         
-        bola_is_gerak = check_velocity(ball.body.velocity, 2, True)
-        
-        # CATCH BOLA diem lama
-        if(bola_is_gerak):
-            bola_stay_time = time.perf_counter()
-        else:
-            # ok diem, cek berapa lama diem
-            if(time.perf_counter() - bola_stay_time > 6.0):
-                # draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-                # pygame.display.update()
-                max_ronde_time = 0.0
-                # print('0.5s in real time diem', iter_to_touch)
-
+        # if(doVisualize):
+        clear_screen(window)
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
         pygame.display.update()
         clock.tick(fps)
 
-        cur_distance_ball = calculate_distance(player.body.position, ball.body.position)
-        # karang malah menjauh, but cek if bola gerak
-        if(prev_distance_ball < cur_distance_ball and not bola_is_gerak):
-            if(cur_distance_ball > 200):# kalo di bawah 100 gpp menjauh dikit
-                isRun = False
-            
-        prev_distance_ball = cur_distance_ball
+        # FITNESS INSIDE LOOP (DANGER VIN, BUT I BELIEVE IN MATH), fitnes kalo nendang ke arah bener dapt bons
+        if(just_sentuh):
+            just_sentuh=False
+            angle_vec = get_ball_vec_angle(ball)
+            angle_goal = get_ball_to_goal_angle(ball, opo_goal[0])
+            dtetha = calculate_diff_angle(angle_goal, angle_vec, False)
+            double_dtetha = dtetha*2
+            if(double_dtetha < np.pi):
+                # fancy way detect < pi/2 is 2* < pi
+                # bonus bener nendang:
+                bonus_bener_nendang = 1 - double_dtetha/np.pi
+                fitnesfied = bonus_bener_nendang*10*(solo_touch_ball_counter < max_touch)
+                genomes[0][1].fitness += fitnesfied
+
+
+        # cek time out based by ball
+        bola_is_gerak = check_velocity(ball.body.velocity, 20, True)
+        # CATCH BOLA diem lama
+        if(bola_is_gerak):
+            bola_stay_time = time.perf_counter()
+        else:
+            # ok diem, cek berapa lama diem, kalu lama, end
+            if(time.perf_counter() - bola_stay_time > 6):
+                max_ronde_time = 0.0
+        
+        # cek termination by player ngejauh by angle
+        player_isGettingFurther = player_is_gerak_menjauh(player, ball, 2.0, np.pi*0.75, 200)
+        # alasan gak isRUn=player is bla bla, takutnya isRun udah di set false entah di kode atas right now or in the future
+        if(player_isGettingFurther): 
+            genomes[0][1].fitness -= 11000
+            print('menjauh')
+            isRun=False
+        else:
+            genomes[0][1].fitness += 0.1
+
+        # cek termination by bola ngeliwat gawang
+        ball_isNgeliwat = check_ball_ngeliwat_gawang(ball, width, width_tiang)
+        if(ball_isNgeliwat):
+            total_ngeliwat_gawang+=1
+            if(total_ngeliwat_gawang >= max_ngeliwat_gawang):
+                isRun=False
+                print('cuk anda lewat gawang > dari', max_ngeliwat_gawang, 'iterasi')
+        else:
+            total_ngeliwat_gawang=0
+
         # check termination
         if(game_phase==GamePhase.JUST_GOAL):
 
@@ -822,7 +922,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             if(time.perf_counter()-start_time_after_goal >= wait_after_goal):
                 # end ronde
                 isRun=False
-                print('get to 1 goal stop')
+                # print('get to 1 goal stop')
                 break
         
         # same, check termination
@@ -866,6 +966,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
     sqe = (norm_distance*norm_distance)
     if(solo_touch_ball_counter == 0):
         sqe = 10000
+    elif(total_ngeliwat_gawang >= max_ngeliwat_gawang):
+        # hoo dia berhenti karna bola lewat gawang, hm, punish mse jadi 2500 aja anggap gak ngapa ngapai
+        sqe=2500
 
     # gak ke pake tapi
     genomes[0][1].nendang += solo_touch_ball_counter
@@ -873,21 +976,21 @@ def game(window, width, height, genomes, config, doRandom, asA):
     # bonus time ngegol + fix sqe
     if(game_phase == GamePhase.JUST_GOAL):
         if(asA and score_data['A'] > score_data['B']):
-            fitness_time_goal = (1/total_iter)*100000
+            fitness_time_goal = (400000/total_iter)
             genomes[0][1].ngegol += 1
-            sqe = 0
-            print('aman')
+            sqe = 0 
+            print('a ngegol must be tru->', asA)
 
         elif(not asA and score_data['B'] > score_data['A']):
-            fitness_time_goal = (1/total_iter)*100000
+            fitness_time_goal = (400000/total_iter)
             genomes[0][1].ngegol += 1
             sqe=0
-            print('aman')
+            print('B ngegol must be tru->', not asA)
 
         else:
             fitness_time_goal=0.0
             genomes[0][1].own_goal +=1
-            print('kampret og')
+            print('bunuh diri wtf')
 
         genomes[0][1].fitness += fitness_time_goal
     
@@ -928,8 +1031,6 @@ def make_teams(genomes):
 import pickle
 def eval_genomes(genomes, config):
     set_fitness_val(genomes)
-    # total_repeat = 3 # ganti jadi banyak in a row
-    genome_pengegol = []
     best_fitness = -100000000
     best_id = 0
     total_fitness = 0.0
@@ -939,40 +1040,37 @@ def eval_genomes(genomes, config):
         genomes[id_genome][1].own_goal = 0
         genomes[id_genome][1].sqe_dis2_goal = []
         
-        prev_nendang = 0
-        prev_og = 0
+        # prev_nendang = 0
+        # prev_og = 0
         prev_goal = 0
         counter = 0
         max_try = 1000
         hasChance=True
-        max_patience = 2
+        max_patience = 0
         patience_count=0
 
-        while(genomes[id_genome][1].ngegol < 101 and counter < max_try and hasChance):
+        while(genomes[id_genome][1].ngegol < 201 and counter < max_try and hasChance):
             counter+=1
             # do 1 game
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, True)
             fq = game(window, WIDTH, HEIGHT, [genomes[id_genome]], config, True, False)
             if(fq):break
             
-            if(genomes[id_genome][1].ngegol > prev_goal):
+            if(genomes[id_genome][1].ngegol - prev_goal > 1):
                 patience_count = 0
             else:
                 patience_count+=1
             
-            if(patience_count == max_patience):
+            if(patience_count > max_patience):
                 hasChance=False
-                print('reach patience')
+                # print('reach patience')
             else:
                 hasChance=True
-            
-            nendang_score = (genomes[id_genome][1].nendang - prev_nendang) * 150
-            if(genomes[id_genome][1].own_goal == prev_og > nendang_score):
-                nendang_score *= -1
+                # print('lanjut')
 
-            genomes[id_genome][1].fitness += nendang_score
-            prev_nendang = genomes[id_genome][1].nendang
-            prev_og = genomes[id_genome][1].own_goal
+            # prev_nendang = genomes[id_genome][1].nendang
+            # prev_og = genomes[id_genome][1].own_goal
+            prev_goal = genomes[id_genome][1].ngegol
         
         
         # calculate additional fitness
@@ -1011,6 +1109,7 @@ def eval_genomes(genomes, config):
 
 
 
+
 def run(config_file):
     # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
@@ -1027,8 +1126,6 @@ def run(config_file):
         winner.fitness=0.0
         game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
         # break
-
-
 
 
 
