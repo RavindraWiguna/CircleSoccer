@@ -75,6 +75,9 @@ def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=Fal
             obj.draw(window)
 
 
+def draw_target(window, target_pos, radius):
+    pygame.draw.circle(window, (200, 200, 200), target_pos, radius)
+
 def get_ball_vec_vel(window, ball, do_draw):
     Vx, Vy = ball.body.velocity
     angle = calculate_angle((0,0), (Vx, Vy))
@@ -101,7 +104,55 @@ def get_ball_goal_vec(window, ball, opo_goal, do_draw):
         end_position = (Px + Dx*100, Py + Dy*100)
         pygame.draw.line(window, (16, 16, 16), ball.body.position, end_position, 5)
 
+        # for where player should be
+        # pygame.draw.line(window, (240, 0, 240), ball.body.position, (Px - Dx*100, Py-Dy*100), 3)
+
     return angle
+
+
+def get_random_wp(ball, distance, min_x, min_y, max_x, max_y):
+    increment = np.pi/360
+    tetha = 0.0
+    Bx, By = ball.body.position
+
+    pool_end = []
+
+    while(tetha < np.pi*2):
+        # increment
+        
+        # print(tetha, distance)
+        addX = distance*np.cos(tetha)
+        addY = distance*np.sin(tetha)
+
+        endX = Bx + addX
+        endY = By + addY
+
+        tetha += increment
+        if(endX < min_x):
+            continue
+
+        if(endX > max_x):
+            continue
+
+        if(endY < min_y):
+            continue
+
+        if(endY > max_y):
+            continue
+
+        # aman
+        pool_end.append((endX, endY))
+
+
+    
+    # now choose
+    if(pool_end==[]):
+        return (0,0)
+    selected_wp = random.choice(pool_end)
+    return selected_wp
+
+
+
 
 ### === GAME SPECIFIC FUNCTIONS === ###
 
@@ -803,6 +854,9 @@ def game(window, width, height, genomes, config, doRandom, asA):
             space.step(dt)
 
         draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, True)
+        wp = get_random_wp(ball, 250, width*0.2, height*0.2, width*(1-0.2), height*(1-0.2))
+        draw_target(window, wp, 25)
+        # print('donee')
         angle_vec = get_ball_vec_vel(window, ball, True)
         angle_goal = get_ball_goal_vec(window, ball, opo_goal[0], True)
         if(just_sentuh):
