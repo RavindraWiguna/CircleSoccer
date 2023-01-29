@@ -22,11 +22,13 @@ def cap_radian(rad):
     
     return rad
 
-def calculate_diff_angle(rad1, rad2):
+def calculate_diff_angle(rad1, rad2, verbose):
     rad1 = cap_radian(rad1)
     rad2 = cap_radian(rad2)
     basic = abs(rad1-rad2)
     counter_part = np.pi*2 - basic
+    if(verbose):
+        print(rad1, rad2, basic, counter_part)
     return min(counter_part, basic)
 
 

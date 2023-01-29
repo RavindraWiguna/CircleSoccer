@@ -814,7 +814,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
     '''
     start_time_after_goal=None
     wait_after_goal=0.0
-    max_ronde_time =4.0 # reset
+    max_ronde_time =40.0 # reset
 
     # reset global var
     score_data = {'A':0,'B':0}
@@ -834,7 +834,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
 
     # termination helper
     total_ngeliwat_gawang=0
-    max_ngeliwat_gawang=40
+    max_ngeliwat_gawang=400
 
     forceQuit=False
     total_iter = 1
@@ -843,7 +843,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
     while isRun:
         total_iter+=1
         iter_to_touch+=1
-        doVisualize=False
         isHitWall = [0]*36
         for event in pygame.event.get():
             if(event.type== pygame.QUIT):
@@ -851,10 +850,6 @@ def game(window, width, height, genomes, config, doRandom, asA):
                 isRun=False
                 print('force quit')
                 break
-        
-        keys = pygame.key.get_pressed()
-        if(keys[pygame.K_SPACE]):
-            doVisualize=True
 
         # gerakin player
         the_input = make_data_masuk_solo(player, opo_goal[0], ball, width, not asA)
@@ -866,11 +861,11 @@ def game(window, width, height, genomes, config, doRandom, asA):
         for _ in range(step):
             space.step(dt)
         
-        if(doVisualize):
-            clear_screen(window)
-            draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
-            pygame.display.update()
-            # clock.tick(fps)
+        # if(doVisualize):
+        clear_screen(window)
+        draw(window, [ball, *team_A, *team_B, *goal_a, *goal_b], score_data, space, draw_options, False)
+        pygame.display.update()
+        clock.tick(fps)
 
         # FITNESS INSIDE LOOP (DANGER VIN, BUT I BELIEVE IN MATH), fitnes kalo nendang ke arah bener dapt bons
         if(just_sentuh):
@@ -894,7 +889,7 @@ def game(window, width, height, genomes, config, doRandom, asA):
             bola_stay_time = time.perf_counter()
         else:
             # ok diem, cek berapa lama diem, kalu lama, end
-            if(time.perf_counter() - bola_stay_time > 0.6):
+            if(time.perf_counter() - bola_stay_time > 6):
                 max_ronde_time = 0.0
         
         # cek termination by player ngejauh by angle
@@ -1121,39 +1116,16 @@ def run(config_file):
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
 
-    # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
-
-    # # Add a stdout reporter to show progress in the terminal.
-
-    # Run for up to 300 generations.
     import pickle
-    # p = pickle.load(open('pop_vel.pkl', 'rb'))
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-148')
-    # p.config=config
-     
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(30))
-    try:
-        winner = p.run(eval_genomes, 1000)
-        with open('winner_vel_fit.pkl', 'wb') as mfile:
-            pickle.dump(winner, mfile)
-            mfile.close()
-            print('FINISHED')
-    except KeyboardInterrupt:
-        print('voila')
-
-    visualize.plot_stats(p.reporters.reporters[1], ylog=False, view=True)
-    visualize.plot_species(p.reporters.reporters[1], view=True)
-
-
-
-    with open('pop_vel_fit.pkl', 'wb') as mfile:
-        pickle.dump(p, mfile)
-        mfile.close()
-        print('save population')
+    asA=True
+    # winner = pickle.load(open('winner_vel_fit.pkl', 'rb'))
+    p = pickle.load(open('pop_vel_fit.pkl', 'rb'))
+    winner = p.best_genome
+    while True:
+        asA=not asA
+        winner.fitness=0.0
+        game(window, WIDTH, HEIGHT, [[1,winner]], config, True, asA)
+        # break
 
 
 

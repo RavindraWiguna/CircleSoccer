@@ -64,6 +64,10 @@ def draw(window, objs, score_data, space=None, drawing_options=None, isDebug=Fal
     window.blit(bg, (0,0))
     draw_score(window, score_data['A'], score_data['B'])
     
+    ballz = objs[0].body
+    score_text = SCORE_FONT.render(f'{ballz.position[0]:.1f}|{ballz.position[1]:.1f}', 1, (16, 16, 16))
+    window.blit(score_text, (WIDTH/2-85, HEIGHT/2))
+
     if(isDebug):
         space.debug_draw(drawing_options)
     else:
@@ -803,8 +807,10 @@ def game(window, width, height, genomes, config, doRandom, asA):
         angle_goal = get_ball_goal_vec(window, ball, opo_goal[0], True)
         if(just_sentuh):
             just_sentuh=False
-            print(to_degree(calculate_diff_angle(angle_goal, angle_vec)))
-            
+            print(to_degree(calculate_diff_angle(angle_goal, angle_vec, False)), '|beda')
+        
+        if(ball.body.position[0] <= width_tiang or ball.body.position[0] > (width-width_tiang)):
+            print('kelewat gawang')
         
         pygame.display.update()
         clock.tick(10)

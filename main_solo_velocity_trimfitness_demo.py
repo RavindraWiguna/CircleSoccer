@@ -1019,7 +1019,9 @@ def run(config_file):
 
     import pickle
     asA=True
-    winner = pickle.load(open('winner_vel_fit.pkl', 'rb'))
+    # winner = pickle.load(open('winner_vel_fit.pkl', 'rb'))
+    p = pickle.load(open('pop_vel_fit.pkl', 'rb'))
+    winner = p.best_genome
     while True:
         asA=not asA
         winner.fitness=0.0
